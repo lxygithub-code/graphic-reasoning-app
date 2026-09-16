@@ -3,9 +3,9 @@
     <u-list>
       <u-list-item v-for="(item, idx) in list" :key="idx">
         <view class="item">
-          <text>日期：{{ item.date }}</text>
-          <text>正确：{{ item.correct }}/{{ item.total }}</text>
-          <text>用时：{{ item.time }}s</text>
+          <text class="item-date">{{ item.date }}</text>
+          <text class="item-correct">正确 {{ item.correct }}/{{ item.total }}</text>
+          <text class="item-time">{{ item.time }}s</text>
         </view>
       </u-list-item>
     </u-list>
@@ -14,7 +14,7 @@
 </template>
 
 <script>
-import request from '@/utils/request.js'
+import request from '@/utils/request'
 export default {
   data() {
     return {
@@ -34,11 +34,33 @@ export default {
 </script>
 
 <style scoped>
+.history-container {
+  min-height: 100vh;
+  background: #f6f1e4;
+  padding: 20rpx 24rpx;
+  box-sizing: border-box;
+}
 .item {
   display: flex;
-  justify-content: space-around;
-  padding: 20rpx;
-  border-bottom: 1px solid #eee;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28rpx 24rpx;
+  margin-bottom: 20rpx;
+  background: #fbf7ec;
+  border: 1rpx solid #e2d8c0;
+  border-radius: 14rpx;
+}
+.item-date {
   font-size: 28rpx;
+  color: #3a322c;
+}
+.item-correct {
+  font-size: 28rpx;
+  color: #4e6e58;
+  font-weight: 600;
+}
+.item-time {
+  font-size: 26rpx;
+  color: #8a8278;
 }
 </style>

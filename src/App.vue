@@ -13,8 +13,8 @@ export default {
 </script>
 
 <style>
-/* 全局样式 */
+/* 全局样式：水墨宣纸底色 */
 page {
-  background-color: #f5f5f5;
+  background-color: #f6f1e4;
 }
 </style>
