@@ -59,7 +59,7 @@ export default {
           label: '国考专题',
           desc: '国考历年真题 · 题库数量:',
           icon: '/static/images/icons/icon-guokao.png',
-          url: '/pages/practice/practice?mode=0&category=guokao'
+          url: '/pages/practice/practice?mode=0&examType=guokao'
         },
         {
           key: 'shengkao',

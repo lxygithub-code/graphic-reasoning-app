@@ -43,6 +43,12 @@
 			}
 		},
 		{
+		  "path": "pages/result/detail",
+		  "style": {
+		    "navigationBarTitleText": "答题记录"
+		  }
+		},
+		{
 			"path": "pages/favorite/favorite",
 			"style": {
 				"navigationBarTitleText": "我的收藏"
