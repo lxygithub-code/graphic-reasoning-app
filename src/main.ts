@@ -3,6 +3,7 @@ import { createStore } from 'vuex'           // 导入 createStore
 import uviewPlus from 'uview-plus'
 import App from './App.vue'
 import storeOptions from './store'           // 导入你的 store 配置对象
+import { picUrl } from '@/utils/request' 
 
 export function createApp() {
   const app = createSSRApp(App)
@@ -15,6 +16,7 @@ export function createApp() {
   // 注册 Vuex store
   app.use(store)
   
+  app.config.globalProperties.picUrl = picUrl
   return {
     app
   }

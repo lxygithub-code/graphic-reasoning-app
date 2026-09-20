@@ -13,13 +13,34 @@
       <view class="brand-seal">图</view>
       <text class="brand-title">图推达人</text>
     </view>
+
+    <!-- 副标题 -->
     <view class="subtitle">
       <view class="subtitle-line"></view>
       <text class="subtitle-text">图形推理 · 每日精进</text>
       <view class="subtitle-line"></view>
     </view>
 
-    <!-- 底部 CTA：进入功能主页 -->
+    <!-- ★ 个人中心入口（副标题右下方） -->
+    <view class="user-entry-wrap">
+      <view class="user-entry" @tap="goProfile">
+        <image
+          v-if="userInfo.avatarUrl"
+          :src="picUrl(userInfo.avatarUrl)"
+          class="user-avatar"
+          mode="aspectFill"
+        />
+        <view v-else class="user-avatar-placeholder">
+          <text class="icon-text">👤</text>
+        </view>
+        <view class="user-info">
+          <text class="user-nickname">{{ userInfo.nickname || '点击登录 / 完善资料' }}</text>
+          <text class="user-tip">个人中心 ›</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部 CTA -->
     <view class="cta" @tap="onStart">
       <text class="cta-text">开启今日练习</text>
       <view class="cta-seal"></view>
@@ -33,11 +54,18 @@
 </template>
 
 <script>
+import { getUserInfo } from '@/api/user'
+import { picUrl } from '@/utils/request'
+
 export default {
   name: 'Index',
   data() {
     return {
-      statusBarHeight: 20
+      statusBarHeight: 20,
+      userInfo: {
+        nickname: '',
+        avatarUrl: ''
+      }
     };
   },
   onLoad() {
@@ -46,7 +74,27 @@ export default {
       this.statusBarHeight = sys.statusBarHeight || 20;
     } catch (e) {}
   },
+  onShow() {
+    // 每次回到首页刷新用户信息
+    this.loadUserInfo()
+  },
   methods: {
+    picUrl,
+
+    async loadUserInfo() {
+      try {
+        const res = await getUserInfo()
+        if (res) {
+          this.userInfo = {
+            nickname: res.nickname || '',
+            avatarUrl: res.avatarUrl || ''
+          }
+        }
+      } catch (e) {
+        // 未登录或接口失败，保持默认
+      }
+    },
+
     onStart() {
       uni.navigateTo({
         url: '/pages/home/home',
@@ -55,6 +103,16 @@ export default {
           uni.showToast({ title: '页面开发中', icon: 'none' });
         }
       });
+    },
+
+    goProfile() {
+      uni.navigateTo({
+        url: '/pages/profile/profile',
+        fail: (err) => {
+          console.error('navigateTo profile fail:', err);
+          uni.showToast({ title: '页面开发中', icon: 'none' });
+        }
+      })
     }
   }
 };
@@ -121,7 +179,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-top: 240rpx;
+  padding-top: 180rpx;
 }
 
 .brand-seal {
@@ -167,6 +225,78 @@ export default {
   font-size: 24rpx;
   color: #8a8278;
   letter-spacing: 6rpx;
+}
+
+/* ★ 个人中心入口（副标题下方靠右） */
+.user-entry-wrap {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  padding: 40rpx 60rpx 0;
+}
+
+.user-entry {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 12rpx 28rpx 12rpx 12rpx;
+  background: rgba(251, 247, 236, 0.9);
+  border: 2rpx solid #e2d8c0;
+  border-radius: 50rpx;
+  box-shadow: 0 6rpx 18rpx rgba(58, 50, 44, 0.08);
+  transition: all 0.2s;
+
+  &:active {
+    opacity: 0.85;
+    transform: scale(0.98);
+  }
+}
+
+.user-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: #f0e8d8;
+  flex-shrink: 0;
+}
+
+.user-avatar-placeholder {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: #f0e8d8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-text {
+  font-size: 36rpx;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.user-nickname {
+  font-size: 28rpx;
+  color: #3a322c;
+  font-weight: 600;
+  max-width: 300rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-tip {
+  font-size: 20rpx;
+  color: #8a8278;
+  letter-spacing: 2rpx;
+  margin-top: 4rpx;
 }
 
 /* 底部 CTA */

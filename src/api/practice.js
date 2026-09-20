@@ -33,3 +33,21 @@ export function submitComment(data) {
     data
   })
 }
+
+/** 查某题的评论列表 */
+export function listComments(questionId, limit = 10) {
+  return request({
+    url: '/api/practice/comment/list',
+    method: 'GET',
+    data: { questionId, limit }
+  })
+}
+
+/** 我的答题记录列表 */
+export function listMyRecords(pageNum = 1, pageSize = 10) {
+  return request({
+    url: '/api/practice/records',
+    method: 'GET',
+    data: { pageNum, pageSize }
+  })
+}

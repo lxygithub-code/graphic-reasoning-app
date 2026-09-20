@@ -8,6 +8,8 @@
 export default {
   onLaunch() {
     console.log('App Launch')
+	//真机调试
+	// wx.setEnableDebug({ enableDebug: true })
   }
 }
 </script>

@@ -1,10 +1,10 @@
 <template>
   <view class="page">
-    <!-- 水墨装饰：顶部淡墨晕染 -->
+    <!-- 水墨装饰 -->
     <view class="ink-orb orb-1"></view>
     <view class="ink-orb orb-2"></view>
 
-    <!-- 自定义导航栏：返回 + 标题 -->
+    <!-- 自定义导航栏 -->
     <view class="navbar" :style="{ paddingTop: statusBarHeight + 'px' }">
       <view class="navbar-inner">
         <view class="back" @tap="onBack">
@@ -25,7 +25,7 @@
       <view class="subtitle-line"></view>
     </view>
 
-    <!-- 功能模块：2 列 x 2 行 -->
+    <!-- 功能模块 -->
     <view class="grid">
       <view
         v-for="item in features"
@@ -33,9 +33,12 @@
         class="grid-item"
         @tap="onTapFeature(item)"
       >
-        <image class="feature-icon" :src="item.icon" mode="aspectFit"></image>
+        <image class="feature-icon" :src="item.icon" mode="aspectFit" referrer-policy="no-referrer"></image>
         <text class="feature-label">{{ item.label }}</text>
-        <text class="feature-desc">{{ item.desc }}</text>
+        <text class="feature-desc">
+          {{ item.desc }} ·
+          <text class="desc-count">{{ countText(item.key) }}</text>
+        </text>
         <view class="item-seal"></view>
       </view>
     </view>
@@ -48,64 +51,95 @@
 </template>
 
 <script>
+import { picUrl } from '@/utils/request'
+import { countByExamType } from '@/api/question'
+
 export default {
   name: 'Home',
   data() {
     return {
       statusBarHeight: 20,
+      counts: {},          // { guokao: 60, shengkao: 0, ... }
       features: [
         {
           key: 'guokao',
           label: '国考专题',
-          desc: '国考历年真题 · 题库数量:',
-          icon: '/static/images/icons/icon-guokao.png',
+          desc: '国考历年真题',
+          icon: picUrl('icon-guokao.png'),
           url: '/pages/practice/practice?mode=0&examType=guokao'
         },
         {
           key: 'shengkao',
           label: '省考专题',
-          desc: '省考历年真题 · 题库数量:',
-          icon: '/static/images/icons/icon-shengkao.png',
-          url: '/pages/practice/practice?mode=0&category=shengkao'
+          desc: '省考历年真题',
+          icon: picUrl('icon-shengkao.png'),
+          url: '/pages/practice/practice?mode=0&examType=shengkao'
         },
         {
           key: 'shiye',
           label: '事业编专题',
-          desc: '事业单位考试真题 · 题库数量:',
-          icon: '/static/images/icons/icon-shiye.png',
-          url: '/pages/practice/practice?mode=0&category=shiye'
+          desc: '事业单位考试真题',
+          icon: picUrl('icon-shiye.png'),
+          url: '/pages/practice/practice?mode=0&examType=shiye'
         },
         {
           key: 'custom',
           label: '自定义刷题',
           desc: '混合组卷 · 自由练习',
-          icon: '/static/images/icons/icon-custom.png',
-          url: '/pages/practice/practice?mode=0&category=custom'
+          icon: picUrl('icon-custom.png'),
+          url: '/pages/practice/practice?mode=0&examType=custom'
         }
       ]
-    };
+    }
   },
   onLoad() {
     try {
-      const sys = uni.getSystemInfoSync();
-      this.statusBarHeight = sys.statusBarHeight || 20;
+      const sys = uni.getSystemInfoSync()
+      this.statusBarHeight = sys.statusBarHeight || 20
     } catch (e) {}
   },
+  onShow() {
+    this.loadCounts()
+  },
   methods: {
-    onBack() {
-      uni.navigateBack({ delta: 1 });
+    async loadCounts() {
+      try {
+        const list = await countByExamType()
+        const map = {}
+        ;(list || []).forEach(item => {
+          map[item.examType] = item.count
+        })
+        this.counts = map
+      } catch (e) {
+        console.warn('加载题库数量失败', e)
+      }
     },
+
+    // 根据 key 返回题库数量文字
+    countText(key) {
+      // 自定义刷题：显示全部题目总数
+      if (key === 'custom') {
+        const total = Object.values(this.counts).reduce((sum, n) => sum + (n || 0), 0)
+        return total > 0 ? `${total} 题` : '-- 题'
+      }
+      const n = this.counts[key]
+      return n != null ? `${n} 题` : '-- 题'
+    },
+
     onTapFeature(item) {
-      uni.navigateTo({
-        url: item.url,
-        fail: (err) => {
-          console.error('navigateTo fail:', err);
-          uni.showToast({ title: '页面开发中', icon: 'none' });
-        }
-      });
+      uni.navigateTo({ url: item.url })
+    },
+
+    onBack() {
+      const pages = getCurrentPages()
+      if (pages.length > 1) {
+        uni.navigateBack({ delta: 1 })
+      } else {
+        uni.reLaunch({ url: '/pages/index/index' })
+      }
     }
   }
-};
+}
 </script>
 
 <style lang="scss" scoped>
@@ -187,7 +221,6 @@ export default {
   letter-spacing: 4rpx;
 }
 
-/* 朱砂小印 */
 .seal {
   margin-left: 12rpx;
   width: 16rpx;
@@ -223,7 +256,7 @@ export default {
   letter-spacing: 6rpx;
 }
 
-/* 功能模块网格：2x2 布局 */
+/* 功能模块网格 */
 .grid {
   position: relative;
   z-index: 2;
@@ -290,6 +323,14 @@ export default {
   color: #8a8278;
   letter-spacing: 1rpx;
   text-align: center;
+  line-height: 1.5;
+}
+
+/* ★ 数量强调：朱砂红 + 加粗 */
+.desc-count {
+  color: #b03a2e;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 /* 页脚题字 */

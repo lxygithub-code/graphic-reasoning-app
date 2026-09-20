@@ -49,22 +49,28 @@
 		  }
 		},
 		{
-			"path": "pages/favorite/favorite",
-			"style": {
-				"navigationBarTitleText": "我的收藏"
-			}
+		  "path": "pages/profile/profile",
+		  "style": { "navigationBarTitleText": "个人中心" }
 		},
 		{
-			"path": "pages/history/history",
-			"style": {
-				"navigationBarTitleText": "练习记录"
-			}
+		  "path": "pages/history/history",
+		  "style": { "navigationBarTitleText": "答题历史" }
 		},
 		{
-			"path": "pages/profile/profile",
-			"style": {
-				"navigationBarTitleText": "个人中心"
-			}
+		  "path": "pages/favorite/favorite",
+		  "style": { "navigationBarTitleText": "我的收藏" }
+		},
+		{
+		  "path": "pages/favorite/detail",
+		  "style": { "navigationBarTitleText": "收藏详情" }
+		},
+		{
+		  "path": "pages/wrong/wrong",
+		  "style": { "navigationBarTitleText": "我的错题" }
+		},
+		{
+		  "path": "pages/wrong/detail",
+		  "style": { "navigationBarTitleText": "错题详情" }
 		}
 	],
 	"globalStyle": {

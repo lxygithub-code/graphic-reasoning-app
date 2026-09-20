@@ -75,16 +75,25 @@
 
 			<!-- 答题区 -->
 			<view class="question-area" v-if="!isFinished">
-				<view class="question-number">
-					第 {{ currentIndex + 1 }} / {{ questions.length }} 题
-				</view>
 
+				<!-- 题号 + 收藏 同一行 -->
+				<view class="question-header">
+				  <view class="question-number">
+				    第 {{ currentIndex + 1 }} / {{ questions.length }} 题
+				  </view>
+				  <view class="fav-btn" @click="onToggleFavorite">
+				    <text>{{ isFavorited ? '★' : '☆' }}</text>
+				    <text class="fav-text">{{ isFavorited ? '已收藏' : '收藏' }}</text>
+				  </view>
+				</view>
+				
 				<!-- 题干 -->
 				<view class="question-content">{{ currentQuestion.content }}</view>
-
+				
 				<!-- 题干图片 -->
-				<image v-if="currentQuestion.imageUrl" :src="fullUrl(currentQuestion.imageUrl)" class="question-image"
-					mode="widthFix" @click="previewImage(fullUrl(currentQuestion.imageUrl))" />
+				<image v-if="currentQuestion.imageUrl" :src="picUrl(currentQuestion.imageUrl)" class="question-image"
+					mode="widthFix" referrer-policy="no-referrer"
+					@click="previewImage(picUrl(currentQuestion.imageUrl))" />
 
 				<!-- 选项 -->
 				<view class="option-list">
@@ -96,8 +105,8 @@
             }" @click="onSelect(opt.key)">
 						<view class="option-key">{{ opt.key }}.</view>
 						<text v-if="opt.type === 'text'" class="option-text">{{ opt.value }}</text>
-						<image v-else :src="fullUrl(opt.value)" class="option-image" mode="widthFix"
-							@click.stop="previewImage(fullUrl(opt.value))" />
+						<image v-else :src="picUrl(opt.value)" class="option-image" mode="widthFix"
+							referrer-policy="no-referrer" @click.stop="previewImage(picUrl(opt.value))" />
 					</view>
 				</view>
 
@@ -117,11 +126,22 @@
 
 					<view class="analysis">
 						<view class="analysis-title">解析</view>
-						<view class="analysis-content">{{ feedback.analysis || '暂无解析' }}</view>
+
+						<!-- 默认解析（如果没有分平台解析时展示） -->
+						<view v-if="!feedback.analyses || !feedback.analyses.length" class="analysis-content">
+							{{ feedback.analysis || '暂无解析' }}
+						</view>
+
 						<!-- 分平台解析 -->
 						<view v-for="(a, i) in feedback.analyses || []" :key="i" class="platform-analysis">
 							<view class="platform-tag">{{ platformLabel(a.platform) }}</view>
-							<view class="platform-content">{{ a.content }}</view>
+
+							<!-- 文字解析 -->
+							<view v-if="a.type !== 'image'" class="platform-content">{{ a.content }}</view>
+
+							<!-- 图片解析 -->
+							<image v-else :src="picUrl(a.content)" class="platform-image" mode="widthFix"
+								referrer-policy="no-referrer" @click="previewImage(picUrl(a.content))" />
 						</view>
 					</view>
 
@@ -193,10 +213,17 @@
 
 <script>
 	import request from '@/utils/request'
+	// import { picUrl } from '@/utils/request' 
 	import {
 		submitComment
 	} from '@/api/practice'
-
+	import {
+		safeBack
+	} from '@/utils/nav'
+	import {
+		toggleFavorite,
+		checkFavorite
+	} from '@/api/favorite'
 	const EXAMTYPE_TITLES = {
 		guokao: '国考专题',
 		shengkao: '省考专题',
@@ -217,7 +244,7 @@
 				weightUnknown: 60,
 				weightCorrect: 20,
 				weightWrong: 20,
-
+				platformOptions: [],
 				questions: [],
 				currentIndex: 0,
 				selected: '',
@@ -227,6 +254,7 @@
 					isCorrect: false,
 					correctOption: '',
 					analysis: '',
+					analyses: [],
 					comments: []
 				},
 
@@ -242,7 +270,8 @@
 				commentInput: '',
 				commentSubmitting: false,
 
-				submitLoading: false
+				submitLoading: false,
+				isFavorited: false
 			}
 		},
 
@@ -253,6 +282,7 @@
 			uni.setNavigationBarTitle({
 				title
 			})
+			this.loadPlatformOptions()
 		},
 
 		onUnload() {
@@ -292,6 +322,42 @@
 		},
 
 		methods: {
+			async loadFavoriteState() {
+				const qid = this.currentQuestion?.id
+				if (!qid) return
+				try {
+					this.isFavorited = await checkFavorite(qid)
+				} catch (e) {
+					this.isFavorited = false
+				}
+			},
+			async onToggleFavorite() {
+			    const qid = this.currentQuestion?.id
+			    if (!qid) return
+			    try {
+			      const res = await toggleFavorite(qid)
+			      this.isFavorited = res
+			      uni.showToast({ title: res ? '已收藏' : '已取消收藏', icon: 'none' })
+			    } catch (e) {}
+			  },
+			async loadPlatformOptions() {
+				try {
+					const list = await request({
+						url: '/api/dict/list',
+						data: {
+							dictType: 'analysis_platform'
+						}
+					})
+					this.platformOptions = list || []
+				} catch (e) {
+					console.warn('加载平台字典失败', e)
+				}
+			},
+
+			platformLabel(val) {
+				const item = this.platformOptions.find(o => o.dictValue === val)
+				return item ? item.dictLabel : (val || '解析')
+			},
 			// ==================== 权重联动 ====================
 			onWeightChange(type, e) {
 				const val = e.detail.value
@@ -420,6 +486,7 @@
 				const r = this.ensureAnswer(qid)
 				this.currentTimeUsed = r.timeSpent || 0
 				this.startUiTimer()
+				this.loadFavoriteState()
 			},
 
 			leaveQuestion() {
@@ -507,6 +574,7 @@
 						isCorrect: res.isCorrect,
 						correctOption: res.correctOption || '',
 						analysis: res.analysis || '暂无解析',
+						analyses: res.analyses || [],
 						comments: res.comments || []
 					}
 					rec.isCorrect = res.isCorrect
@@ -609,6 +677,7 @@
 						isCorrect: false,
 						correctOption: '',
 						analysis: '',
+						analyses: [],
 						comments: []
 					}
 					this.showFeedback = false
@@ -669,13 +738,7 @@
 			},
 
 			goHome() {
-				uni.navigateBack()
-			},
-
-			// ==================== 工具 ====================
-			fullUrl(u) {
-				if (!u) return ''
-				return u.startsWith('http') ? u : 'http://192.168.0.146:8866' + u
+				safeBack();
 			},
 			previewImage(url) {
 				if (!url) return
@@ -1074,6 +1137,39 @@
 		word-break: break-all;
 	}
 
+	/* 分平台解析 */
+	.platform-analysis {
+		margin-top: 16rpx;
+		padding: 16rpx;
+		background: #f4ecdc;
+		border-radius: 10rpx;
+	}
+
+	.platform-tag {
+		display: inline-block;
+		padding: 2rpx 12rpx;
+		font-size: 22rpx;
+		color: #b03a2e;
+		background: #fff;
+		border: 1rpx solid #b03a2e;
+		border-radius: 16rpx;
+		margin-bottom: 8rpx;
+	}
+
+	.platform-content {
+		font-size: 26rpx;
+		color: #5c5348;
+		line-height: 1.7;
+		white-space: pre-wrap;
+	}
+
+	.platform-image {
+		width: 100%;
+		margin-top: 8rpx;
+		border-radius: 8rpx;
+		background: #fff;
+	}
+
 	/* 评论输入 */
 	.comment-form {
 		margin-bottom: 20rpx;
@@ -1229,5 +1325,38 @@
 		color: #5c5348;
 		line-height: 1.7;
 		white-space: pre-wrap;
+	}
+	.question-header {
+	  display: flex;
+	  justify-content: space-between;
+	  align-items: center;
+	  margin-bottom: 16rpx;
+	}
+	
+	.question-number {
+	  font-size: 26rpx;
+	  color: #8a8278;
+	  letter-spacing: 2rpx;
+	}
+	
+	.fav-btn {
+	  display: flex;
+	  align-items: center;
+	  gap: 6rpx;
+	  padding: 6rpx 18rpx;
+	  background: #fbf7ec;
+	  border: 1rpx solid #e2d8c0;
+	  border-radius: 24rpx;
+	  font-size: 24rpx;
+	  color: #b03a2e;
+	}
+	
+	.fav-btn:active {
+	  opacity: 0.7;
+	}
+	
+	.fav-text {
+	  font-size: 22rpx;
+	  color: #8a8278;
 	}
 </style>
