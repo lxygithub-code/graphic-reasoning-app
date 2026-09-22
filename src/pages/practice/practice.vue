@@ -13,7 +13,19 @@
 					<text class="tab-desc">每题立即核对</text>
 				</view>
 			</view>
-
+			<!-- ★ 事业单位子类选择 -->
+			<view v-if="examType === 'shiye'" class="exam-sub-wrap">
+				<view class="exam-sub-title">事业单位类别</view>
+				<view class="exam-sub-options">
+					<view v-for="item in examSubOptions" :key="item.dictValue" class="exam-sub-item"
+						:class="{ active: examSubType === item.dictValue }" @click="examSubType = item.dictValue">
+						{{ item.dictLabel }}
+					</view>
+				</view>
+				<view class="exam-sub-tip">
+					{{ examSubType ? '当前：' + examSubType + '类' : '不选则抽所有类别' }}
+				</view>
+			</view>
 			<!-- 组卷题数 -->
 			<view class="start-subtitle">
 				{{ mode === 0 ? '选择本次组卷题数（1–15 题）' : '选择本次背题题数（5–30 题）' }}
@@ -78,18 +90,18 @@
 
 				<!-- 题号 + 收藏 同一行 -->
 				<view class="question-header">
-				  <view class="question-number">
-				    第 {{ currentIndex + 1 }} / {{ questions.length }} 题
-				  </view>
-				  <view class="fav-btn" @click="onToggleFavorite">
-				    <text>{{ isFavorited ? '★' : '☆' }}</text>
-				    <text class="fav-text">{{ isFavorited ? '已收藏' : '收藏' }}</text>
-				  </view>
+					<view class="question-number">
+						第 {{ currentIndex + 1 }} / {{ questions.length }} 题
+					</view>
+					<view class="fav-btn" @click="onToggleFavorite">
+						<text>{{ isFavorited ? '★' : '☆' }}</text>
+						<text class="fav-text">{{ isFavorited ? '已收藏' : '收藏' }}</text>
+					</view>
 				</view>
-				
+
 				<!-- 题干 -->
 				<view class="question-content">{{ currentQuestion.content }}</view>
-				
+
 				<!-- 题干图片 -->
 				<image v-if="currentQuestion.imageUrl" :src="picUrl(currentQuestion.imageUrl)" class="question-image"
 					mode="widthFix" referrer-policy="no-referrer"
@@ -237,6 +249,8 @@
 				started: false,
 				mode: 0, // 0=刷题，1=背题
 				examType: 'custom',
+				examSubType: '',
+				examSubOptions: [],
 				// 两种模式各自的组卷题数
 				brushSize: 10, // 刷题模式：1–15
 				reciteSize: 20, // 背题模式：5–30
@@ -283,6 +297,7 @@
 				title
 			})
 			this.loadPlatformOptions()
+			this.loadExamSubOptions()
 		},
 
 		onUnload() {
@@ -322,6 +337,24 @@
 		},
 
 		methods: {
+			/** ★ 加载事业单位子类（如果当前是 shiye） */
+			async loadExamSubOptions() {
+				if (this.examType !== 'shiye') return
+				try {
+					// 用 treeDict 拿树
+					const tree = await request({
+						url: '/api/dict/tree',
+						method: 'GET',
+						data: {
+							dictType: 'exam_type'
+						}
+					})
+					const shiyeNode = (tree || []).find(n => n.dictValue === 'shiye')
+					this.examSubOptions = shiyeNode?.children || []
+				} catch (e) {
+					console.warn('加载事业单位子类失败', e)
+				}
+			},
 			async loadFavoriteState() {
 				const qid = this.currentQuestion?.id
 				if (!qid) return
@@ -332,14 +365,17 @@
 				}
 			},
 			async onToggleFavorite() {
-			    const qid = this.currentQuestion?.id
-			    if (!qid) return
-			    try {
-			      const res = await toggleFavorite(qid)
-			      this.isFavorited = res
-			      uni.showToast({ title: res ? '已收藏' : '已取消收藏', icon: 'none' })
-			    } catch (e) {}
-			  },
+				const qid = this.currentQuestion?.id
+				if (!qid) return
+				try {
+					const res = await toggleFavorite(qid)
+					this.isFavorited = res
+					uni.showToast({
+						title: res ? '已收藏' : '已取消收藏',
+						icon: 'none'
+					})
+				} catch (e) {}
+			},
 			async loadPlatformOptions() {
 				try {
 					const list = await request({
@@ -431,6 +467,7 @@
 						data: {
 							count,
 							examType: this.examType,
+							examSubType: this.examSubType || undefined, 
 							weightUnknown: this.weightUnknown,
 							weightCorrect: this.weightCorrect,
 							weightWrong: this.weightWrong
@@ -751,6 +788,54 @@
 </script>
 
 <style lang="scss" scoped>
+	.exam-sub-wrap {
+	  width: 100%;
+	  margin-bottom: 40rpx;
+	  padding: 24rpx;
+	  background: #fbf7ec;
+	  border: 2rpx solid #e2d8c0;
+	  border-radius: 16rpx;
+	}
+	
+	.exam-sub-title {
+	  font-size: 26rpx;
+	  color: #3a322c;
+	  font-weight: 700;
+	  letter-spacing: 2rpx;
+	  margin-bottom: 16rpx;
+	}
+	
+	.exam-sub-options {
+	  display: flex;
+	  flex-wrap: wrap;
+	  gap: 16rpx;
+	}
+	
+	.exam-sub-item {
+	  min-width: 96rpx;
+	  padding: 16rpx 28rpx;
+	  text-align: center;
+	  font-size: 28rpx;
+	  color: #3a322c;
+	  background: #f6f1e4;
+	  border: 2rpx solid #e2d8c0;
+	  border-radius: 32rpx;
+	  transition: all 0.2s;
+	}
+	
+	.exam-sub-item.active {
+	  background: #b03a2e;
+	  color: #f6f1e4;
+	  border-color: #b03a2e;
+	  font-weight: 600;
+	}
+	
+	.exam-sub-tip {
+	  margin-top: 16rpx;
+	  font-size: 22rpx;
+	  color: #8a8278;
+	  letter-spacing: 1rpx;
+	}
 	.practice-container {
 		min-height: 100vh;
 		padding: 30rpx;
@@ -1326,37 +1411,38 @@
 		line-height: 1.7;
 		white-space: pre-wrap;
 	}
+
 	.question-header {
-	  display: flex;
-	  justify-content: space-between;
-	  align-items: center;
-	  margin-bottom: 16rpx;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 16rpx;
 	}
-	
+
 	.question-number {
-	  font-size: 26rpx;
-	  color: #8a8278;
-	  letter-spacing: 2rpx;
+		font-size: 26rpx;
+		color: #8a8278;
+		letter-spacing: 2rpx;
 	}
-	
+
 	.fav-btn {
-	  display: flex;
-	  align-items: center;
-	  gap: 6rpx;
-	  padding: 6rpx 18rpx;
-	  background: #fbf7ec;
-	  border: 1rpx solid #e2d8c0;
-	  border-radius: 24rpx;
-	  font-size: 24rpx;
-	  color: #b03a2e;
+		display: flex;
+		align-items: center;
+		gap: 6rpx;
+		padding: 6rpx 18rpx;
+		background: #fbf7ec;
+		border: 1rpx solid #e2d8c0;
+		border-radius: 24rpx;
+		font-size: 24rpx;
+		color: #b03a2e;
 	}
-	
+
 	.fav-btn:active {
-	  opacity: 0.7;
+		opacity: 0.7;
 	}
-	
+
 	.fav-text {
-	  font-size: 22rpx;
-	  color: #8a8278;
+		font-size: 22rpx;
+		color: #8a8278;
 	}
 </style>

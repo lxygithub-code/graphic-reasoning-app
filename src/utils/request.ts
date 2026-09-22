@@ -1,11 +1,8 @@
 // 临时使用的cpolar域名，每天更新
-export const BASE_URL = 'https://5001c716.r3.cpolar.top';
+export const BASE_URL = 'http://192.168.0.146:8866';
 // 图片基础路径
-export const PIC_BASE = BASE_URL + '/pics'
-// 智能拼接：兼容 /upload/、/pics/、纯文件名 三种情况
-//上传的附件 /upload/2026/09/17/xxx.png	https://xxx.cpolar.cn/upload/2026/09/17/xxx.png
-//代理的静态资源 /pics/icon-guokao.png	https://xxx.cpolar.cn/pics/icon-guokao.png
-//静态资源 icon-guokao.png	https://xxx.cpolar.cn/pics/icon-guokao.png
+export const PIC_BASE = 'https://graphic-push-images.oss-cn-beijing.aliyuncs.com/static'
+
 export const picUrl = (name) => {
   if (!name) return ''
   // 已是完整 URL

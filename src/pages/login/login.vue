@@ -1,6 +1,6 @@
 <template>
   <view class="login-container">
-    <image src="/static/logo.png" mode="aspectFit" class="logo"></image>
+    <image src="https://graphic-push-images.oss-cn-beijing.aliyuncs.com/static/logo.png" mode="aspectFit" class="logo"></image>
     <view class="login-btn" @click="handleLogin">微信一键登录</view>
   </view>
 </template>

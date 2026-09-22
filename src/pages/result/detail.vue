@@ -54,7 +54,18 @@
 					</view>
 				</view>
 			</view>
-
+			<!-- ★ 来源信息 -->
+			<view v-if="currentItem.source || currentItem.examType" class="card-source">
+				<text v-if="currentItem.source" class="source-item">
+					<text class="source-label">来源</text>
+					{{ currentItem.source }}
+				</text>
+				<!-- <text v-if="currentItem.examType" class="source-item">
+					<text class="source-label">考试</text>
+					{{ examTypeLabel(currentItem.examType) }}
+					<template v-if="currentItem.examSubType">-{{ currentItem.examSubType }}类</template>
+				</text> -->
+			</view>
 			<!-- 题干 -->
 			<view class="card-content">{{ currentItem.content }}</view>
 
@@ -174,6 +185,7 @@
 				comments: [],
 				commentLoading: false,
 				platformOptions: [],
+				examTypeOptions: [],
 				commentInput: '',
 				commentSubmitting: false,
 				isFavorited: false,
@@ -188,9 +200,21 @@
 			this.recordId = options.recordId
 			this.loadDetail()
 			this.loadPlatformOptions()
+			this.loadExamTypeOptions()
 		},
 		methods: {
 			picUrl,
+			async loadExamTypeOptions() {
+			  try {
+			    this.examTypeOptions = await listDict('exam_type') || []
+			  } catch (e) {}
+			},
+			
+			examTypeLabel(val) {
+			  const item = this.examTypeOptions.find(o => o.dictValue === val)
+			  return item ? item.dictLabel : (val || '-')
+			},
+			
 			async handleComment() {
 				const content = (this.commentInput || '').trim()
 				if (!content) {
@@ -232,39 +256,47 @@
 				}
 			},
 			async loadDetail() {
-			  try {
-			    uni.showLoading({ title: '加载中...' })
-			    const res = await getRecordDetail(this.recordId)
-			    this.data = res || this.data
-			    if (this.data.items && this.data.items.length) {
-			      this.loadComments(this.data.items[0].questionId)
-			      this.loadFavoriteState(this.data.items[0].questionId)   // ★
-			    }
-			  } catch (e) {
-			    uni.showToast({ title: '加载失败', icon: 'none' })
-			  } finally {
-			    uni.hideLoading()
-			  }
+				try {
+					uni.showLoading({
+						title: '加载中...'
+					})
+					const res = await getRecordDetail(this.recordId)
+					this.data = res || this.data
+					if (this.data.items && this.data.items.length) {
+						this.loadComments(this.data.items[0].questionId)
+						this.loadFavoriteState(this.data.items[0].questionId) // ★
+					}
+				} catch (e) {
+					uni.showToast({
+						title: '加载失败',
+						icon: 'none'
+					})
+				} finally {
+					uni.hideLoading()
+				}
 			},
 			async loadFavoriteState(questionId) {
-			  if (!questionId) return
-			  try {
-			    this.isFavorited = await checkFavorite(questionId)
-			  } catch (e) {
-			    this.isFavorited = false
-			  }
+				if (!questionId) return
+				try {
+					this.isFavorited = await checkFavorite(questionId)
+				} catch (e) {
+					this.isFavorited = false
+				}
 			},
-			
+
 			async onToggleFavorite() {
-			  const item = this.currentItem
-			  if (!item) return
-			  try {
-			    const res = await toggleFavorite(item.questionId)
-			    this.isFavorited = res
-			    uni.showToast({ title: res ? '已收藏' : '已取消收藏', icon: 'none' })
-			  } catch (e) {}
+				const item = this.currentItem
+				if (!item) return
+				try {
+					const res = await toggleFavorite(item.questionId)
+					this.isFavorited = res
+					uni.showToast({
+						title: res ? '已收藏' : '已取消收藏',
+						icon: 'none'
+					})
+				} catch (e) {}
 			},
-			
+
 			async loadPlatformOptions() {
 				try {
 					const list = await listDict('analysis_platform')
@@ -295,7 +327,7 @@
 				const item = this.data.items[idx]
 				if (item) {
 					this.loadComments(item.questionId)
-					this.loadFavoriteState(item.questionId)//切换时刷新收藏状态
+					this.loadFavoriteState(item.questionId) //切换时刷新收藏状态
 					// 切换题目时滚动到顶部，方便查看
 					uni.pageScrollTo({
 						scrollTop: 0,
@@ -325,36 +357,62 @@
 </script>
 
 <style lang="scss" scoped>
+	/* ============ 来源信息 ============ */
+	.card-source {
+	  display: flex;
+	  flex-wrap: wrap;
+	  gap: 12rpx;
+	  margin-bottom: 16rpx;
+	}
+	
+	.source-item {
+	  display: inline-flex;
+	  align-items: center;
+	  padding: 4rpx 16rpx;
+	  background: #f4ecdc;
+	  border-radius: 20rpx;
+	  font-size: 22rpx;
+	  color: #5c5348;
+	  letter-spacing: 1rpx;
+	}
+	
+	.source-label {
+	  color: #b03a2e;
+	  font-weight: 600;
+	  margin-right: 6rpx;
+	  font-size: 22rpx;
+	}
+	
 	.card-head-right {
-	  display: flex;
-	  align-items: center;
-	  gap: 16rpx;
+		display: flex;
+		align-items: center;
+		gap: 16rpx;
 	}
-	
+
 	.fav-btn {
-	  width: 56rpx;
-	  height: 56rpx;
-	  display: flex;
-	  align-items: center;
-	  justify-content: center;
-	  border-radius: 50%;
-	  background: #f6f1e4;
-	  border: 2rpx solid #e2d8c0;
-	  font-size: 32rpx;
-	  color: #8a8278;
-	  transition: all 0.2s;
+		width: 56rpx;
+		height: 56rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		background: #f6f1e4;
+		border: 2rpx solid #e2d8c0;
+		font-size: 32rpx;
+		color: #8a8278;
+		transition: all 0.2s;
 	}
-	
+
 	.fav-btn.active {
-	  color: #e6a23c;
-	  border-color: #e6a23c;
-	  background: #fff6e6;
+		color: #e6a23c;
+		border-color: #e6a23c;
+		background: #fff6e6;
 	}
-	
+
 	.fav-btn:active {
-	  transform: scale(0.92);
+		transform: scale(0.92);
 	}
-	
+
 	.detail-container {
 		min-height: 100vh;
 		padding: 30rpx;
