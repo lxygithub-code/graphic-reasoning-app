@@ -177,7 +177,7 @@
 					</view>
 
 					<!-- 评论输入 -->
-					<view class="comment-form">
+					<view v-if="feedback.canComment === 1" class="comment-form">
 						<textarea v-model="commentInput" class="comment-textarea" placeholder="分享你的解题思路...（200 字以内）"
 							maxlength="200" :disabled="commentSubmitting" auto-height />
 						<view class="comment-form-footer">
@@ -187,6 +187,9 @@
 								{{ commentSubmitting ? '发送中...' : '发表评论' }}
 							</view>
 						</view>
+					</view>
+					<view v-else class="comment-disabled-tip">
+						<text>您的评论权限已被关闭，如需开启请联系管理员</text>
 					</view>
 				</view>
 
@@ -269,7 +272,8 @@
 					correctOption: '',
 					analysis: '',
 					analyses: [],
-					comments: []
+					comments: [],
+					canComment: 1
 				},
 
 				// 答题记录：{ [questionId]: { questionId, userAnswer, timeSpent, isCorrect, correctOption, feedback } }
@@ -467,7 +471,7 @@
 						data: {
 							count,
 							examType: this.examType,
-							examSubType: this.examSubType || undefined, 
+							examSubType: this.examSubType || undefined,
 							weightUnknown: this.weightUnknown,
 							weightCorrect: this.weightCorrect,
 							weightWrong: this.weightWrong
@@ -491,7 +495,8 @@
 						isCorrect: false,
 						correctOption: '',
 						analysis: '',
-						comments: []
+						comments: [],
+						canComment: 1
 					}
 					this.started = true
 
@@ -612,7 +617,8 @@
 						correctOption: res.correctOption || '',
 						analysis: res.analysis || '暂无解析',
 						analyses: res.analyses || [],
-						comments: res.comments || []
+						comments: res.comments || [],
+						canComment: res.canComment !== undefined ? res.canComment : 1
 					}
 					rec.isCorrect = res.isCorrect
 					rec.correctOption = res.correctOption
@@ -715,7 +721,8 @@
 						correctOption: '',
 						analysis: '',
 						analyses: [],
-						comments: []
+						comments: [],
+						canComment: 1
 					}
 					this.showFeedback = false
 				}
@@ -789,53 +796,54 @@
 
 <style lang="scss" scoped>
 	.exam-sub-wrap {
-	  width: 100%;
-	  margin-bottom: 40rpx;
-	  padding: 24rpx;
-	  background: #fbf7ec;
-	  border: 2rpx solid #e2d8c0;
-	  border-radius: 16rpx;
+		width: 100%;
+		margin-bottom: 40rpx;
+		padding: 24rpx;
+		background: #fbf7ec;
+		border: 2rpx solid #e2d8c0;
+		border-radius: 16rpx;
 	}
-	
+
 	.exam-sub-title {
-	  font-size: 26rpx;
-	  color: #3a322c;
-	  font-weight: 700;
-	  letter-spacing: 2rpx;
-	  margin-bottom: 16rpx;
+		font-size: 26rpx;
+		color: #3a322c;
+		font-weight: 700;
+		letter-spacing: 2rpx;
+		margin-bottom: 16rpx;
 	}
-	
+
 	.exam-sub-options {
-	  display: flex;
-	  flex-wrap: wrap;
-	  gap: 16rpx;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 16rpx;
 	}
-	
+
 	.exam-sub-item {
-	  min-width: 96rpx;
-	  padding: 16rpx 28rpx;
-	  text-align: center;
-	  font-size: 28rpx;
-	  color: #3a322c;
-	  background: #f6f1e4;
-	  border: 2rpx solid #e2d8c0;
-	  border-radius: 32rpx;
-	  transition: all 0.2s;
+		min-width: 96rpx;
+		padding: 16rpx 28rpx;
+		text-align: center;
+		font-size: 28rpx;
+		color: #3a322c;
+		background: #f6f1e4;
+		border: 2rpx solid #e2d8c0;
+		border-radius: 32rpx;
+		transition: all 0.2s;
 	}
-	
+
 	.exam-sub-item.active {
-	  background: #b03a2e;
-	  color: #f6f1e4;
-	  border-color: #b03a2e;
-	  font-weight: 600;
+		background: #b03a2e;
+		color: #f6f1e4;
+		border-color: #b03a2e;
+		font-weight: 600;
 	}
-	
+
 	.exam-sub-tip {
-	  margin-top: 16rpx;
-	  font-size: 22rpx;
-	  color: #8a8278;
-	  letter-spacing: 1rpx;
+		margin-top: 16rpx;
+		font-size: 22rpx;
+		color: #8a8278;
+		letter-spacing: 1rpx;
 	}
+
 	.practice-container {
 		min-height: 100vh;
 		padding: 30rpx;
@@ -1444,5 +1452,17 @@
 	.fav-text {
 		font-size: 22rpx;
 		color: #8a8278;
+	}
+	
+	.comment-disabled-tip {
+	  margin-top: 20rpx;
+	  padding: 24rpx;
+	  text-align: center;
+	  font-size: 24rpx;
+	  color: #8a8278;
+	  background: #f6f1e4;
+	  border: 1rpx dashed #e2d8c0;
+	  border-radius: 10rpx;
+	  letter-spacing: 1rpx;
 	}
 </style>
