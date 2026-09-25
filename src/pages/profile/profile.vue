@@ -57,7 +57,7 @@
 
 <script>
 import { getUserInfo, updateUserProfile } from '@/api/user'
-import { picUrl } from '@/utils/request'
+import { picUrl, BASE_URL } from '@/utils/request'
 
 export default {
   data() {
@@ -116,7 +116,7 @@ export default {
     uploadAvatar(filePath) {
       return new Promise((resolve, reject) => {
         uni.uploadFile({
-          url: 'http://192.168.0.146:8866/api/admin/upload/image',  // 或改成小程序端的上传接口
+          url: `${BASE_URL}/api/admin/upload/image`,
           filePath,
           name: 'file',
           header: {

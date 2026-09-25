@@ -228,7 +228,6 @@
 
 <script>
 	import request from '@/utils/request'
-	// import { picUrl } from '@/utils/request' 
 	import {
 		submitComment
 	} from '@/api/practice'

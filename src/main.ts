@@ -2,7 +2,7 @@ import { createSSRApp } from 'vue'
 import { createStore } from 'vuex'           // 导入 createStore
 import uviewPlus from 'uview-plus'
 import App from './App.vue'
-import storeOptions from './store'           // 导入你的 store 配置对象
+import storeOptions from './store/index.js'           // 导入你的 store 配置对象
 import { picUrl } from '@/utils/request' 
 
 export function createApp() {
