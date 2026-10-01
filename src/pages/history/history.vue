@@ -91,12 +91,15 @@
 				pageSize: 10,
 				loading: false,
 				noMore: false,
-				categoryMap: {}
+				categoryMap: {},
+				total: 0, // ★ 后端总数
+				initialized: false // ★ 是否已初始化
 			}
 		},
+
 		computed: {
 			totalRecords() {
-				return this.list.length
+				return this.total || this.list.length // ★ 优先用后端 total
 			},
 			avgAccuracy() {
 				if (!this.list.length) return 0
@@ -107,23 +110,42 @@
 				return this.list.reduce((s, it) => s + (it.totalCount || 0), 0)
 			}
 		},
-		async onShow() {
-			this.pageNum = 1
-			this.noMore = false
-			this.list = []
-			await this.loadCategoryMap() 
-			this.loadData()
+
+		onLoad() {
+			// ★ 未登录 → 跳登录页
+			if (!uni.getStorageSync('token')) {
+				uni.redirectTo({
+					url: '/pages/login/login'
+				})
+				return
+			}
 		},
+
+		async onShow() {
+			// ★ 双保险
+			if (!uni.getStorageSync('token')) return
+
+			// ★ 只在首次进入时重置，返回时保留现状
+			if (!this.initialized) {
+				this.initialized = true
+				this.pageNum = 1
+				this.noMore = false
+				this.list = []
+				await this.loadCategoryMap()
+				this.loadData()
+			}
+		},
+
 		onReachBottom() {
 			if (!this.noMore && !this.loading) {
 				this.pageNum++
 				this.loadData()
 			}
 		},
+
 		methods: {
 			async loadCategoryMap() {
 				try {
-					// 用 exam_type 字典翻译
 					const list = await listDict('exam_type') || []
 					const map = {}
 					list.forEach(o => {
@@ -136,6 +158,7 @@
 			formatCategory(val) {
 				return this.categoryMap[val] || val || '综合练习'
 			},
+
 			async loadData() {
 				if (this.loading) return
 				this.loading = true
@@ -147,7 +170,10 @@
 					} else {
 						this.list = this.list.concat(records)
 					}
-					if (this.list.length >= res.total) {
+					// ★ 记录后端总数
+					this.total = res.total || 0
+					// ★ 判断是否还有更多
+					if (this.list.length >= this.total) {
 						this.noMore = true
 					}
 				} catch (e) {
@@ -157,7 +183,6 @@
 				}
 			},
 
-			/** 根据正确率返回颜色 class */
 			getAccuracyClass(accuracy) {
 				const a = Number(accuracy) || 0
 				if (a >= 80) return 'is-good'
@@ -165,10 +190,8 @@
 				return 'is-bad'
 			},
 
-			/** 格式化时间：只显示 月-日 时:分 */
 			formatTime(t) {
 				if (!t) return ''
-				// 兼容 "2026-09-22 16:22:45" 或 ISO 格式
 				const s = String(t).replace('T', ' ')
 				const m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ ](\d{2}):(\d{2})/)
 				if (!m) return s
@@ -176,7 +199,6 @@
 				return `${mo}-${day} ${hh}:${mm}`
 			},
 
-			/** 格式化耗时 */
 			formatDuration(seconds) {
 				const s = Number(seconds) || 0
 				if (s < 60) return `${s} 秒`

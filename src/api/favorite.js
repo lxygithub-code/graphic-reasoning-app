@@ -1,34 +1,35 @@
-import request from '@/utils/request'
+import { request, authRequest } from '@/utils/request'
 
+/** 收藏/取消收藏（★ 需要登录） */
 export function toggleFavorite(questionId) {
-  return request({
+  return authRequest({
     url: '/api/favorite/toggle',
     method: 'POST',
     data: { questionId }
   })
 }
 
+/** 是否已收藏（★ 游客也能调，未登录返回 false） */
 export function checkFavorite(questionId) {
-  return request({
+  return request({                          // ★ 用 request 不弹登录框
     url: '/api/favorite/check',
     method: 'GET',
-    data: { questionId }
+    params: { questionId }                  // ★ 改成 params
   })
 }
 
+/** 收藏列表（★ 需要登录） */
 export function listFavorites(pageNum = 1, pageSize = 10) {
-  return request({
+  return authRequest({
     url: '/api/favorite/list',
     method: 'GET',
-    data: { pageNum, pageSize }
+    params: { pageNum, pageSize }           // ★ 改成 params
   })
 }
 
-/**
- * ★ 收藏详情（供 pages/favorite/detail.vue 使用）
- */
+/** 收藏详情（★ 需要登录） */
 export function getFavoriteDetail(questionId) {
-  return request({
+  return authRequest({                      // ★ 改成 authRequest
     url: `/api/favorite/${questionId}/detail`,
     method: 'GET'
   })

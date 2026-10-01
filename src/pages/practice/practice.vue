@@ -39,28 +39,35 @@
 			</view>
 			<view class="pack-tip">共 {{ mode === 0 ? brushSize : reciteSize }} 题</view>
 
-			<!-- 权重设置 -->
-			<view class="weight-title">题目抽取权重（三者之和 100%）</view>
-			<view class="weight-item">
-				<text class="weight-label">未答</text>
-				<slider :min="0" :max="100" :value="weightUnknown" activeColor="#3a322c" backgroundColor="#e6ddc9"
-					block-size="20" show-value @changing="onWeightChange('unknown', $event)"
-					@change="onWeightChange('unknown', $event)" />
-			</view>
-			<view class="weight-item">
-				<text class="weight-label">已答对</text>
-				<slider :min="0" :max="100" :value="weightCorrect" activeColor="#4e6e58" backgroundColor="#e6ddc9"
-					block-size="20" show-value @changing="onWeightChange('correct', $event)"
-					@change="onWeightChange('correct', $event)" />
-			</view>
-			<view class="weight-item">
-				<text class="weight-label">已答错</text>
-				<slider :min="0" :max="100" :value="weightWrong" activeColor="#b03a2e" backgroundColor="#e6ddc9"
-					block-size="20" show-value @changing="onWeightChange('wrong', $event)"
-					@change="onWeightChange('wrong', $event)" />
-			</view>
-			<view class="weight-sum" :class="{ error: weightSum !== 100 }">
-				当前合计：{{ weightSum }}%
+			<!-- 权重设置（★ 仅登录用户显示） -->
+			<template v-if="!isGuest">
+				<view class="weight-title">题目抽取权重（三者之和 100%）</view>
+				<view class="weight-item">
+					<text class="weight-label">未答</text>
+					<slider :min="0" :max="100" :value="weightUnknown" activeColor="#3a322c" backgroundColor="#e6ddc9"
+						block-size="20" show-value @changing="onWeightChange('unknown', $event)"
+						@change="onWeightChange('unknown', $event)" />
+				</view>
+				<view class="weight-item">
+					<text class="weight-label">已答对</text>
+					<slider :min="0" :max="100" :value="weightCorrect" activeColor="#4e6e58" backgroundColor="#e6ddc9"
+						block-size="20" show-value @changing="onWeightChange('correct', $event)"
+						@change="onWeightChange('correct', $event)" />
+				</view>
+				<view class="weight-item">
+					<text class="weight-label">已答错</text>
+					<slider :min="0" :max="100" :value="weightWrong" activeColor="#b03a2e" backgroundColor="#e6ddc9"
+						block-size="20" show-value @changing="onWeightChange('wrong', $event)"
+						@change="onWeightChange('wrong', $event)" />
+				</view>
+				<view class="weight-sum" :class="{ error: weightSum !== 100 }">
+					当前合计：{{ weightSum }}%
+				</view>
+			</template>
+
+			<!-- ★ 游客提示（可选，替换权重区） -->
+			<view v-else class="guest-tip">
+				登录后可自定义抽题权重（未答 / 已答对 / 已答错）
 			</view>
 
 			<view class="ink-btn ink-btn-primary start-btn" @click="startPractice">
@@ -227,7 +234,10 @@
 </template>
 
 <script>
-	import request from '@/utils/request'
+	import {
+		request,
+		authRequest
+	} from '@/utils/request'
 	import {
 		submitComment
 	} from '@/api/practice'
@@ -248,6 +258,7 @@
 	export default {
 		data() {
 			return {
+				isGuest: true,
 				started: false,
 				mode: 0, // 0=刷题，1=背题
 				examType: 'custom',
@@ -293,6 +304,7 @@
 		},
 
 		onLoad(options) {
+			this.isGuest = !uni.getStorageSync('token')
 			this.mode = parseInt(options.mode) || 0
 			this.examType = options.examType || 'custom'
 			const title = EXAMTYPE_TITLES[this.examType] || '练习'
@@ -302,7 +314,9 @@
 			this.loadPlatformOptions()
 			this.loadExamSubOptions()
 		},
-
+		onShow() {
+			this.isGuest = !uni.getStorageSync('token')
+		},
 		onUnload() {
 			this.leaveQuestion()
 		},
@@ -361,6 +375,13 @@
 			async loadFavoriteState() {
 				const qid = this.currentQuestion?.id
 				if (!qid) return
+
+				// ★ 游客直接显示未收藏，不调接口
+				if (!uni.getStorageSync('token')) {
+					this.isFavorited = false
+					return
+				}
+
 				try {
 					this.isFavorited = await checkFavorite(qid)
 				} catch (e) {
@@ -452,18 +473,48 @@
 
 			// ==================== 开始练习 ====================
 			async startPractice() {
-				const count = this.mode === 0 ? this.brushSize : this.reciteSize
-				if (this.weightSum !== 100) {
+				// ★ 游客不校验权重（走简单随机）
+				if (!this.isGuest && this.weightSum !== 100) {
 					uni.showToast({
 						title: '权重之和必须为100%',
 						icon: 'none'
 					})
 					return
 				}
-				try {
-					uni.showLoading({
-						title: '加载中...'
+
+				// ★ 游客引导登录（可选，上一轮建议的）
+				const token = uni.getStorageSync('token')
+				if (!token) {
+					uni.showModal({
+						title: '温馨提示',
+						content: '登录后可保存做题记录和查看解析，是否先登录？',
+						confirmText: '去登录',
+						cancelText: '先逛逛',
+						success: (res) => {
+							if (res.confirm) {
+								uni.navigateTo({
+									url: '/pages/login/login'
+								})
+							} else {
+								this.doStartPractice() // 游客直接抽题
+							}
+						}
 					})
+					return
+				}
+
+				this.doStartPractice()
+			},
+
+			// ★ 把原 startPractice 抽题部分拆出来
+			async doStartPractice() {
+				const count = this.mode === 0 ? this.brushSize : this.reciteSize
+
+				uni.showLoading({
+					title: '加载中...'
+				})
+
+				try {
 					const data = await request({
 						url: '/api/question/random',
 						method: 'POST',
@@ -471,11 +522,15 @@
 							count,
 							examType: this.examType,
 							examSubType: this.examSubType || undefined,
-							weightUnknown: this.weightUnknown,
-							weightCorrect: this.weightCorrect,
-							weightWrong: this.weightWrong
+							// ★ 游客不传权重（后端也忽略）
+							weightUnknown: this.isGuest ? undefined : this.weightUnknown,
+							weightCorrect: this.isGuest ? undefined : this.weightCorrect,
+							weightWrong: this.isGuest ? undefined : this.weightWrong
 						}
 					})
+
+					uni.hideLoading()
+
 					if (!data || data.length === 0) {
 						uni.showToast({
 							title: '暂无题目',
@@ -483,6 +538,7 @@
 						})
 						return
 					}
+
 					this.questions = data
 					this.currentIndex = 0
 					this.isFinished = false
@@ -502,8 +558,12 @@
 					this.$nextTick(() => {
 						this.enterQuestion()
 					})
-				} finally {
+				} catch (e) {
 					uni.hideLoading()
+					uni.showToast({
+						title: '加载失败',
+						icon: 'none'
+					})
 				}
 			},
 
@@ -576,13 +636,21 @@
 
 			// ==================== 选项 ====================
 			async onSelect(key) {
-				if (this.mode === 1 && this.showFeedback) return // 已核对不可改
+				if (this.mode === 1 && this.showFeedback) return
 
 				const qid = this.currentQuestion.id
 				this.selected = key
 				this.ensureAnswer(qid).userAnswer = key
 
 				if (this.mode === 1) {
+					// ★ 游客模式下先提示
+					if (!uni.getStorageSync('token')) {
+						uni.showToast({
+							title: '登录后即可核对答案和查看解析',
+							icon: 'none'
+						})
+						return
+					}
 					await this.checkAnswer(key)
 				}
 			},
@@ -600,7 +668,7 @@
 						title: '核对中...',
 						mask: true
 					})
-					const res = await request({
+					const res = await authRequest({
 						url: '/api/practice/submit-single',
 						method: 'POST',
 						data: {
@@ -736,7 +804,25 @@
 			async submitExam() {
 				if (this.submitLoading) return
 
-				// 确保最后一题的停留时间被记录
+				// ★ 未登录：直接引导登录，不发请求
+				if (!uni.getStorageSync('token')) {
+					uni.showModal({
+						title: '提示',
+						content: '登录后才能保存做题记录，是否登录？',
+						confirmText: '去登录',
+						cancelText: '取消',
+						success: (res) => {
+							if (res.confirm) {
+								uni.navigateTo({
+									url: '/pages/login/login'
+								})
+							}
+						}
+					})
+					return
+				}
+
+				// ★ 记录最后一题的停留时间
 				this.leaveQuestion()
 
 				this.submitLoading = true
@@ -754,7 +840,7 @@
 						}
 					})
 
-					const res = await request({
+					const res = await authRequest({
 						url: '/api/practice/submit-exam',
 						method: 'POST',
 						data: {
@@ -771,6 +857,8 @@
 					})
 				} catch (e) {
 					uni.hideLoading()
+					// ★ 401 已由 authRequest 处理过，不再重复弹错
+					if (e && e.code === 401) return
 					uni.showToast({
 						title: '提交失败，请重试',
 						icon: 'none'
@@ -779,7 +867,6 @@
 					this.submitLoading = false
 				}
 			},
-
 			goHome() {
 				safeBack();
 			},
@@ -794,6 +881,19 @@
 </script>
 
 <style lang="scss" scoped>
+	.guest-tip {
+		width: 100%;
+		margin: 20rpx 0 40rpx;
+		padding: 24rpx;
+		text-align: center;
+		font-size: 24rpx;
+		color: #8a8278;
+		background: #f6f1e4;
+		border: 1rpx dashed #e2d8c0;
+		border-radius: 12rpx;
+		letter-spacing: 1rpx;
+	}
+
 	.exam-sub-wrap {
 		width: 100%;
 		margin-bottom: 40rpx;
@@ -1452,16 +1552,16 @@
 		font-size: 22rpx;
 		color: #8a8278;
 	}
-	
+
 	.comment-disabled-tip {
-	  margin-top: 20rpx;
-	  padding: 24rpx;
-	  text-align: center;
-	  font-size: 24rpx;
-	  color: #8a8278;
-	  background: #f6f1e4;
-	  border: 1rpx dashed #e2d8c0;
-	  border-radius: 10rpx;
-	  letter-spacing: 1rpx;
+		margin-top: 20rpx;
+		padding: 24rpx;
+		text-align: center;
+		font-size: 24rpx;
+		color: #8a8278;
+		background: #f6f1e4;
+		border: 1rpx dashed #e2d8c0;
+		border-radius: 10rpx;
+		letter-spacing: 1rpx;
 	}
 </style>

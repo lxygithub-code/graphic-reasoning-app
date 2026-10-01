@@ -197,10 +197,22 @@
 			}
 		},
 		onLoad(options) {
-			this.recordId = options.recordId
-			this.loadDetail()
-			this.loadPlatformOptions()
-			this.loadExamTypeOptions()
+		  // ★ 未登录：直接跳登录页
+		  if (!uni.getStorageSync('token')) {
+		    uni.redirectTo({ url: '/pages/login/login' })
+		    return
+		  }
+		
+		  this.recordId = options.recordId
+		  if (!this.recordId) {
+		    uni.showToast({ title: '参数错误', icon: 'none' })
+		    setTimeout(() => uni.navigateBack(), 1000)
+		    return
+		  }
+		
+		  this.loadDetail()
+		  this.loadPlatformOptions()
+		  this.loadExamTypeOptions()
 		},
 		methods: {
 			picUrl,

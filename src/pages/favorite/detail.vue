@@ -90,6 +90,24 @@
 			}
 		},
 		onLoad(options) {
+			// ★ 登录检查
+			if (!uni.getStorageSync('token')) {
+				uni.redirectTo({
+					url: '/pages/login/login'
+				})
+				return
+			}
+
+			// ★ 参数校验
+			if (!options.questionId) {
+				uni.showToast({
+					title: '参数错误',
+					icon: 'none'
+				})
+				setTimeout(() => uni.navigateBack(), 800)
+				return
+			}
+
 			this.questionId = options.questionId
 			this.loadPlatformOptions()
 			this.loadDetail()
