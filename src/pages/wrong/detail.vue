@@ -8,13 +8,10 @@
 			</view>
 			<view class="head-meta">
 				<text v-if="data.source" class="meta-tag">{{ data.source }}</text>
-				<text v-if="item.categoryLabel || item.category" class="meta-tag">
-					{{ item.categoryLabel || item.category }}
-				</text>
 				<text v-if="data.duration" class="meta-tag">耗时 {{ data.duration }}s</text>
 			</view>
-		</view>
 
+		</view>
 		<!-- 题干 -->
 		<view class="card">
 			<view class="card-title">题目</view>
@@ -60,7 +57,18 @@
 				暂无解析
 			</view>
 		</view>
-
+		<view v-if="data.categoryLabel || data.category" class="head-card">
+			<!-- 第一行：左标签 + 右按钮 -->
+			<view class="category-top">
+				<text class="category-label">题目类型</text>
+				<view class="category-practice" @click="goPractice">
+					<text class="category-practice-icon">▶</text>
+					<text>同类型题练习</text>
+				</view>
+			</view>
+			<!-- 第二行：完整路径通栏 -->
+			<text class="category-value">{{ data.categoryLabel || data.category }}</text>
+		</view>
 		<!-- 底部按钮 -->
 		<view class="btn-row">
 			<view class="ink-btn ink-btn-ghost" @click="removeWrong">移出错题</view>
@@ -206,6 +214,68 @@
 </script>
 
 <style lang="scss" scoped>
+	/* ★ 题目类型块：上下两行 */
+	.category-row {
+		margin-top: 16rpx;
+		padding: 16rpx 20rpx;
+		background: #f4ecdc;
+		border-left: 6rpx solid #b03a2e;
+		border-radius: 10rpx;
+		display: flex;
+		flex-direction: column;
+		gap: 12rpx;
+	}
+
+	.category-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.category-label {
+		padding: 2rpx 12rpx;
+		font-size: 22rpx;
+		color: #b03a2e;
+		background: #fff;
+		border: 1rpx solid #b03a2e;
+		border-radius: 16rpx;
+		font-weight: 600;
+		letter-spacing: 1rpx;
+		line-height: 1.4;
+	}
+
+	.category-practice {
+		display: flex;
+		align-items: center;
+		gap: 6rpx;
+		padding: 8rpx 20rpx;
+		background: #b03a2e;
+		color: #f6f1e4;
+		font-size: 22rpx;
+		border-radius: 28rpx;
+		letter-spacing: 1rpx;
+		line-height: 1.2;
+		transition: opacity 0.15s;
+	}
+
+	.category-practice:active {
+		opacity: 0.85;
+	}
+
+	.category-practice-icon {
+		font-size: 18rpx;
+		line-height: 1;
+	}
+
+	.category-value {
+		font-size: 26rpx;
+		color: #3a322c;
+		font-weight: 600;
+		letter-spacing: 1rpx;
+		line-height: 1.5;
+		word-break: break-all;
+	}
+
 	.wrong-detail-container {
 		min-height: 100vh;
 		padding: 30rpx;
