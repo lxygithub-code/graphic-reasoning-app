@@ -10,7 +10,9 @@
 
 			<view class="wrong-meta">
 				<text v-if="item.source" class="meta-tag">{{ item.source }}</text>
-				<text v-if="item.category" class="meta-tag">{{ item.category }}</text>
+				<text v-if="item.categoryLabel || item.category" class="meta-tag">
+				    {{ item.categoryLabel || item.category }}
+				</text>
 			</view>
 
 			<view class="wrong-actions">

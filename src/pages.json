@@ -89,6 +89,10 @@
 		  "style": {
 		    "navigationBarTitleText": "题目预览"
 		  }
+		},
+		{
+		  "path": "pages/category/category",
+		  "style": { "navigationBarTitleText": "题目类型分类" }
 		}
 	],
 	"globalStyle": {

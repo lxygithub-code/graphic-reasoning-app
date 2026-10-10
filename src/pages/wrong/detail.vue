@@ -8,7 +8,9 @@
 			</view>
 			<view class="head-meta">
 				<text v-if="data.source" class="meta-tag">{{ data.source }}</text>
-				<text v-if="data.category" class="meta-tag">{{ data.category }}</text>
+				<text v-if="item.categoryLabel || item.category" class="meta-tag">
+					{{ item.categoryLabel || item.category }}
+				</text>
 				<text v-if="data.duration" class="meta-tag">耗时 {{ data.duration }}s</text>
 			</view>
 		</view>
@@ -185,9 +187,18 @@
 			},
 
 			goPractice() {
-				uni.showToast({
-					title: '功能建设中',
-					icon: 'warn'
+				const params = ['mode=1']
+				const examType = this.data.examType
+				if (examType) params.push(`examType=${encodeURIComponent(examType)}`)
+
+				const category = this.data.category // ★ value 路径
+				if (category) params.push(`category=${encodeURIComponent(category)}`)
+
+				const categoryLabel = this.data.categoryLabel || this.data.category // ★ label 路径
+				if (categoryLabel) params.push(`categoryLabel=${encodeURIComponent(categoryLabel)}`)
+
+				uni.navigateTo({
+					url: `/pages/practice/practice?${params.join('&')}`
 				})
 			}
 		}

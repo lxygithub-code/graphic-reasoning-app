@@ -13,7 +13,9 @@
 			<!-- 标签 -->
 			<view class="fav-meta">
 				<text v-if="item.source" class="fav-tag">{{ item.source }}</text>
-				<text v-if="item.category" class="fav-tag">{{ item.category }}</text>
+				<text v-if="item.categoryLabel || item.category" class="fav-tag">
+				    {{ item.categoryLabel || item.category }}
+				</text>
 				<text v-if="item.examType" class="fav-tag">{{ examTypeLabel(item.examType) }}</text>
 			</view>
 

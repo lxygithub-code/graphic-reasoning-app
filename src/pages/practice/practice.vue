@@ -2,6 +2,11 @@
 	<view class="practice-container">
 		<!-- 组卷面板 -->
 		<view v-if="!started" class="start-panel">
+			<view v-if="category" class="filter-banner">
+				<text class="filter-banner-label">题目类型</text>
+				<text class="filter-banner-value">{{ categoryLabel || category }}</text>
+				<text class="filter-banner-clear" @click="clearCategory">×</text>
+			</view>
 			<!-- 模式切换 tab -->
 			<view class="mode-switch">
 				<view class="mode-tab" :class="{ active: mode === 0 }" @click="switchMode(0)">
@@ -267,6 +272,8 @@
 				// 两种模式各自的组卷题数
 				brushSize: 10, // 刷题模式：1–15
 				reciteSize: 20, // 背题模式：5–30
+				category: '', // ★ value 路径（抽题用）
+				categoryLabel: '', // ★ label 路径（展示用）
 				// 权重
 				weightUnknown: 60,
 				weightCorrect: 20,
@@ -307,6 +314,15 @@
 			this.isGuest = !uni.getStorageSync('token')
 			this.mode = parseInt(options.mode) || 0
 			this.examType = options.examType || 'custom'
+
+			// ★ 从分类页跳过来会带 category / categoryLabel
+			this.category = options.category ?
+				decodeURIComponent(options.category) :
+				''
+			this.categoryLabel = options.categoryLabel ?
+				decodeURIComponent(options.categoryLabel) :
+				''
+
 			const title = EXAMTYPE_TITLES[this.examType] || '练习'
 			uni.setNavigationBarTitle({
 				title
@@ -520,6 +536,8 @@
 						method: 'POST',
 						data: {
 							count,
+							// ★ 传 value 路径（后端 Mapper 里做 eq + likeRight 前缀匹配）
+							category: this.category || undefined,
 							examType: this.examType,
 							examSubType: this.examSubType || undefined,
 							// ★ 游客不传权重（后端也忽略）
@@ -875,12 +893,61 @@
 				uni.previewImage({
 					urls: [url]
 				})
+			},
+			clearCategory() {
+			  this.category = ''
+			  this.categoryLabel = ''
 			}
 		}
 	}
 </script>
 
 <style lang="scss" scoped>
+	.filter-banner {
+		display: flex;
+		align-items: flex-start;
+		width: 100%;
+		margin-bottom: 24rpx;
+		padding: 14rpx 20rpx;
+		background: #f4ecdc;
+		border-left: 6rpx solid #b03a2e;
+		border-radius: 10rpx;
+		box-sizing: border-box;
+	}
+
+	.filter-banner-label {
+		font-size: 22rpx;
+		color: #b03a2e;
+		font-weight: 600;
+		padding: 2rpx 12rpx;
+		background: #fff;
+		border: 1rpx solid #b03a2e;
+		border-radius: 16rpx;
+		flex-shrink: 0;
+		margin-right: 12rpx;
+		margin-top: 4rpx;
+		letter-spacing: 1rpx;
+	}
+
+	.filter-banner-value {
+		flex: 1;
+		font-size: 26rpx;
+		color: #3a322c;
+		font-weight: 600;
+		letter-spacing: 1rpx;
+		line-height: 1.6;
+		word-break: break-all;
+		min-width: 0;
+	}
+
+	.filter-banner-clear {
+		font-size: 40rpx;
+		color: #8a8278;
+		padding: 0 8rpx;
+		line-height: 1;
+		align-self: flex-start;
+	}
+
 	.guest-tip {
 		width: 100%;
 		margin: 20rpx 0 40rpx;

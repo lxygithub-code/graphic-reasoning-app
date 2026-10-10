@@ -50,6 +50,14 @@
 					</view>
 					<text class="menu-arrow">›</text>
 				</view>
+				
+				<view class="menu-item" @click="goCategory">
+				  <view class="menu-left">
+				    <text class="menu-icon">🗂️</text>
+				    <text>题型分类</text>
+				  </view>
+				  <text class="menu-arrow">›</text>
+				</view>
 			</view>
 		</template>
 	</view>
@@ -214,6 +222,16 @@
 				uni.navigateTo({
 					url: '/pages/wrong/wrong'
 				})
+			},
+			
+			goCategory() {
+			  uni.navigateTo({
+			    url: '/pages/category/category',
+			    fail: (err) => {
+			      console.error('navigateTo category fail:', err)
+			      uni.showToast({ title: '页面开发中', icon: 'none' })
+			    }
+			  })
 			}
 		}
 	}
