@@ -524,65 +524,79 @@
 
 			// ★ 把原 startPractice 抽题部分拆出来
 			async doStartPractice() {
-				const count = this.mode === 0 ? this.brushSize : this.reciteSize
-
-				uni.showLoading({
-					title: '加载中...'
-				})
-
-				try {
-					const data = await request({
-						url: '/api/question/random',
-						method: 'POST',
-						data: {
-							count,
-							// ★ 传 value 路径（后端 Mapper 里做 eq + likeRight 前缀匹配）
-							category: this.category || undefined,
-							examType: this.examType,
-							examSubType: this.examSubType || undefined,
-							// ★ 游客不传权重（后端也忽略）
-							weightUnknown: this.isGuest ? undefined : this.weightUnknown,
-							weightCorrect: this.isGuest ? undefined : this.weightCorrect,
-							weightWrong: this.isGuest ? undefined : this.weightWrong
-						}
-					})
-
-					uni.hideLoading()
-
-					if (!data || data.length === 0) {
-						uni.showToast({
-							title: '暂无题目',
-							icon: 'none'
-						})
-						return
-					}
-
-					this.questions = data
-					this.currentIndex = 0
-					this.isFinished = false
-					this.answersMap = {}
-					this.selected = ''
-					this.showFeedback = false
-					this.commentInput = ''
-					this.feedback = {
-						isCorrect: false,
-						correctOption: '',
-						analysis: '',
-						comments: [],
-						canComment: 1
-					}
-					this.started = true
-
-					this.$nextTick(() => {
-						this.enterQuestion()
-					})
-				} catch (e) {
-					uni.hideLoading()
-					uni.showToast({
-						title: '加载失败',
-						icon: 'none'
-					})
-				}
+			    // ★ 1. 防抖：防止重复请求和状态重置
+			    if (this.starting) return
+			    this.starting = true
+			
+			    const count = this.mode === 0 ? this.brushSize : this.reciteSize
+			
+			    uni.showLoading({
+			        title: '加载中...'
+			    })
+			
+			    try {
+			        const data = await request({
+			            url: '/api/question/random',
+			            method: 'POST',
+			            data: {
+			                count,
+			                category: this.category || undefined,
+			                examType: this.examType,
+			                examSubType: this.examSubType || undefined,
+			                weightUnknown: this.isGuest ? undefined : this.weightUnknown,
+			                weightCorrect: this.isGuest ? undefined : this.weightCorrect,
+			                weightWrong: this.isGuest ? undefined : this.weightWrong
+			            }
+			        })
+			
+			        if (!data || data.length === 0) {
+			            // ★ 2. 先隐藏 Loading，再弹 Toast
+			            uni.hideLoading()
+			            uni.showToast({
+			                title: '暂无题目',
+			                icon: 'none'
+			            })
+			            return // 注意：这里 return 后，finally 里的 starting = false 依然会执行
+			        }
+			
+			        // 重置状态
+			        this.questions = data
+			        this.currentIndex = 0
+			        this.isFinished = false
+			        this.answersMap = {}
+			        this.selected = ''
+			        this.showFeedback = false
+			        this.commentInput = ''
+			        this.feedback = {
+			            isCorrect: false,
+			            correctOption: '',
+			            analysis: '',
+			            comments: [],
+			            canComment: 1
+			        }
+			        this.started = true
+			
+			        // ★ 3. 关于 $nextTick：如果 enterQuestion 只是记录开始时间，可以直接调用；
+			        // 如果涉及 DOM 操作（如滚动条重置、获取元素高度等），保留 $nextTick 是安全的。
+			        this.$nextTick(() => {
+			            this.enterQuestion()
+			        })
+			
+			    } catch (e) {
+			        // ★ 4. 401 静默处理，保持项目内统一风格
+			        if (e && e.code === 401) return
+			        
+			        // 先隐藏 Loading，再弹错误提示
+			        uni.hideLoading()
+			        uni.showToast({
+			            title: '加载失败',
+			            icon: 'none'
+			        })
+			    } finally {
+			        // ★ 5. 统一释放锁和隐藏 Loading
+			        uni.hideLoading()
+			        this.starting = false
+			    }
 			},
 
 			// ==================== 计时 ====================
@@ -675,52 +689,70 @@
 
 			// ==================== 背题模式：立即核对 ====================
 			async checkAnswer(userAnswer) {
-				// 先把当前停留时间累加
-				this.leaveQuestion()
-
-				const qid = this.currentQuestion.id
-				const rec = this.ensureAnswer(qid)
-
-				try {
-					uni.showLoading({
-						title: '核对中...',
-						mask: true
-					})
-					const res = await authRequest({
-						url: '/api/practice/submit-single',
-						method: 'POST',
-						data: {
-							questionId: qid,
-							userAnswer,
-							timeSpent: rec.timeSpent,
-							practiceMode: 1
-						}
-					})
-
-					const fb = {
-						isCorrect: res.isCorrect,
-						correctOption: res.correctOption || '',
-						analysis: res.analysis || '暂无解析',
-						analyses: res.analyses || [],
-						comments: res.comments || [],
-						canComment: res.canComment !== undefined ? res.canComment : 1
-					}
-					rec.isCorrect = res.isCorrect
-					rec.correctOption = res.correctOption
-					rec.feedback = fb
-
-					this.feedback = fb
-					this.showFeedback = true
-				} catch (e) {
-					uni.showToast({
-						title: '核对失败，请重试',
-						icon: 'none'
-					})
-					// 核对失败：恢复计时，让用户可以重试
-					this.enterQuestion()
-				} finally {
-					uni.hideLoading()
-				}
+			    // ★ 1. 防抖：防止重复点击导致时间重复累加和请求并发
+			    if (this.checking) return
+			    this.checking = true
+			
+			    // ★ 2. 先把当前停留时间累加
+			    this.leaveQuestion()
+			
+			    const qid = this.currentQuestion.id
+			    const rec = this.ensureAnswer(qid)
+			
+			    try {
+			        uni.showLoading({
+			            title: '核对中...',
+			            mask: true
+			        })
+			        
+			        const res = await authRequest({
+			            url: '/api/practice/submit-single',
+			            method: 'POST',
+			            data: {
+			                questionId: qid,
+			                userAnswer,
+			                timeSpent: rec.timeSpent,
+			                practiceMode: 1
+			            }
+			        })
+			
+			        // 建议：这里可以再加一层判断，确保当前题目的 id 没有变（防止用户在等待请求时切换了题目）
+			        if (this.currentQuestion.id !== qid) return
+			
+			        const fb = {
+			            isCorrect: res.isCorrect,
+			            correctOption: res.correctOption || '',
+			            analysis: res.analysis || '暂无解析',
+			            analyses: res.analyses || [],
+			            comments: res.comments || [],
+			            canComment: res.canComment !== undefined ? res.canComment : 1
+			        }
+			        rec.isCorrect = res.isCorrect
+			        rec.correctOption = res.correctOption
+			        rec.feedback = fb
+			
+			        this.feedback = fb
+			        this.showFeedback = true
+			
+			    } catch (e) {
+			        // ★ 3. 先隐藏 Loading，再弹 Toast，防止 Toast 被 hideLoading 意外关闭
+			        uni.hideLoading()
+			        
+			        // 401 静默处理（与 submitExam 保持一致）
+			        if (e && e.code === 401) return
+			
+			        uni.showToast({
+			            title: '核对失败，请重试',
+			            icon: 'none'
+			        })
+			        // 核对失败：恢复计时，让用户可以重试
+			        this.enterQuestion()
+			        return // ★ 这里直接 return，避免走下面的 finally 再次 hideLoading
+			    } finally {
+			        // ★ 4. 统一释放锁和隐藏 Loading（注意 catch 中已经 return 的情况）
+			        uni.hideLoading()
+			        this.checking = false
+			    }
 			},
 
 			// ==================== 评论 ====================
@@ -820,70 +852,75 @@
 
 			// ==================== 交卷 ====================
 			async submitExam() {
-				if (this.submitLoading) return
-
-				// ★ 未登录：直接引导登录，不发请求
-				if (!uni.getStorageSync('token')) {
-					uni.showModal({
-						title: '提示',
-						content: '登录后才能保存做题记录，是否登录？',
-						confirmText: '去登录',
-						cancelText: '取消',
-						success: (res) => {
-							if (res.confirm) {
-								uni.navigateTo({
-									url: '/pages/login/login'
-								})
-							}
-						}
-					})
-					return
-				}
-
-				// ★ 记录最后一题的停留时间
-				this.leaveQuestion()
-
-				this.submitLoading = true
-				uni.showLoading({
-					title: '提交中...'
-				})
-
-				try {
-					const answers = this.questions.map((q) => {
-						const rec = this.answersMap[q.id] || {}
-						return {
-							questionId: q.id,
-							userAnswer: rec.userAnswer || '',
-							timeSpent: rec.timeSpent || 0
-						}
-					})
-
-					const res = await authRequest({
-						url: '/api/practice/submit-exam',
-						method: 'POST',
-						data: {
-							examType: this.examType,
-							questionIds: this.questions.map((q) => q.id),
-							totalTime: this.totalTimeUsed,
-							answers
-						}
-					})
-
-					uni.hideLoading()
-					uni.redirectTo({
-						url: `/pages/result/result?recordId=${res.recordId}&correct=${res.correctCount}&total=${res.totalCount}&accuracy=${res.accuracy}&time=${res.totalTime}`
-					})
-				} catch (e) {
-					uni.hideLoading()
-					// ★ 401 已由 authRequest 处理过，不再重复弹错
-					if (e && e.code === 401) return
-					uni.showToast({
-						title: '提交失败，请重试',
-						icon: 'none'
-					})
-				} finally {
-					this.submitLoading = false
-				}
+			    if (this.submitLoading) return
+			
+			    // ★ 未登录拦截
+			    if (!uni.getStorageSync('token')) {
+			        uni.showModal({
+			            title: '提示',
+			            content: '登录后才能保存做题记录，是否登录？',
+			            confirmText: '去登录',
+			            cancelText: '取消',
+			            success: (res) => {
+			                if (res.confirm) {
+			                    uni.navigateTo({ url: '/pages/login/login' })
+			                }
+			            }
+			        })
+			        return
+			    }
+			
+			    // ★ 提前锁定，避免重试时重复记录时间
+			    this.submitLoading = true
+			    
+			    // ★ 记录最后一题的停留时间（建议内部做防重处理，确保只记录一次有效数据）
+			    this.leaveQuestion()
+			
+			    uni.showLoading({ title: '提交中...' })
+			
+			    try {
+			        const answers = this.questions.map((q) => {
+			            const rec = this.answersMap[q.id] || {}
+			            return {
+			                questionId: q.id,
+			                userAnswer: rec.userAnswer || '',
+			                timeSpent: rec.timeSpent || 0
+			            }
+			        })
+			
+			        const res = await authRequest({
+			            url: '/api/practice/submit-exam',
+			            method: 'POST',
+			            data: {
+			                examType: this.examType,
+			                questionIds: this.questions.map((q) => q.id),
+			                totalTime: this.totalTimeUsed,
+			                answers
+			            }
+			        })
+			
+			        // 跳转前不需要在这里 hideLoading，统一放 finally 里
+			        uni.redirectTo({
+			            url: `/pages/result/result?recordId=${res.recordId}&correct=${res.correctCount}&total=${res.totalCount}&accuracy=${res.accuracy}&time=${res.totalTime}`
+			        })
+			
+			    } catch (e) {
+			        // 401 已由 authRequest 处理过，不再重复弹错
+			        if (e && e.code === 401) return
+			        
+			        uni.showToast({
+			            title: '提交失败，请重试',
+			            icon: 'none'
+			        })
+			    } finally {
+			        // 统一隐藏 loading
+			        uni.hideLoading()
+			        
+			        // 注意：如果 redirectTo 成功了，页面即将销毁，这里重置其实没啥用了。
+			        // 如果 redirectTo 失败或者网络错误，重置后允许用户重试。
+			        // 这是极其安全的兜底逻辑。
+			        this.submitLoading = false
+			    }
 			},
 			goHome() {
 				safeBack();

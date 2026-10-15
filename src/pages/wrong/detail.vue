@@ -195,19 +195,18 @@
 			},
 
 			goPractice() {
-				const params = ['mode=1']
-				const examType = this.data.examType
-				if (examType) params.push(`examType=${encodeURIComponent(examType)}`)
-
-				const category = this.data.category // ★ value 路径
-				if (category) params.push(`category=${encodeURIComponent(category)}`)
-
-				const categoryLabel = this.data.categoryLabel || this.data.category // ★ label 路径
-				if (categoryLabel) params.push(`categoryLabel=${encodeURIComponent(categoryLabel)}`)
-
-				uni.navigateTo({
-					url: `/pages/practice/practice?${params.join('&')}`
-				})
+			  //   抽题时只按 category 过滤，不限考试类型
+			  const params = ['mode=1']
+			
+			  const category = this.data.category      // value 路径，抽题用
+			  if (category) params.push(`category=${encodeURIComponent(category)}`)
+			
+			  const categoryLabel = this.data.categoryLabel || this.data.category  // label 路径，展示用
+			  if (categoryLabel) params.push(`categoryLabel=${encodeURIComponent(categoryLabel)}`)
+			
+			  uni.navigateTo({
+			    url: `/pages/practice/practice?${params.join('&')}`
+			  })
 			}
 		}
 	}

@@ -1,5 +1,5 @@
-export const BASE_URL = 'http://192.168.0.107:8866'
-//export const BASE_URL = 'https://api.graphicmaster.cn'
+//export const BASE_URL = 'http://192.168.0.107:8866'
+export const BASE_URL = 'https://api.graphicmaster.cn'
 export const PIC_BASE = 'https://image.graphicmaster.cn/static'
 
 // ★ 旧 OSS 域名（数据库里存的）
