@@ -93,6 +93,18 @@
 		{
 		  "path": "pages/category/category",
 		  "style": { "navigationBarTitleText": "题目类型分类" }
+		},
+		{
+		  "path": "pages/feedback/index",
+		  "style": { "navigationBarTitleText": "意见箱" }
+		},
+		{
+		  "path": "pages/feedback/submit",
+		  "style": { "navigationBarTitleText": "提出意见" }
+		},
+		{
+		  "path": "pages/feedback/detail",
+		  "style": { "navigationBarTitleText": "意见详情" }
 		}
 	],
 	"globalStyle": {

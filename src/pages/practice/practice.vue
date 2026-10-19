@@ -227,11 +227,11 @@
 					<text class="stat-line">总耗时 {{ totalTimeUsed }} 秒</text>
 				</view>
 
-				<view v-if="mode === 0">
-					<view class="ink-btn ink-btn-primary" @click="submitExam">交卷并查看结果</view>
+				<view v-if="mode === 0" class="finish-btn-wrap">
+				  <view class="finish-submit-btn" @click="submitExam">交卷并查看结果</view>
 				</view>
-				<view v-else>
-					<view class="ink-btn" @click="goHome">返回</view>
+				<view v-else class="finish-btn-wrap">
+				  <view class="finish-return-btn" @click="goHome">返 回</view>
 				</view>
 			</view>
 		</template>
@@ -1667,5 +1667,129 @@
 		border: 1rpx dashed #e2d8c0;
 		border-radius: 10rpx;
 		letter-spacing: 1rpx;
+	}
+	
+	/* 练习完成页的返回按钮专属样式 */
+	.finish-return-btn {
+	  width: 260rpx;                 /* 固定宽度 */
+	  padding: 18rpx 0;
+	  margin-top: 20rpx;
+	  border-radius: 44rpx;
+	  background: transparent;       /* 透明底色 */
+	  color: #3a322c;                /* 墨色文字 */
+	  border: 2rpx solid #3a322c;    /* 墨色描边 */
+	  font-size: 28rpx;
+	  letter-spacing: 6rpx;          /* 增加字间距，更有传统印章感 */
+	  text-align: center;
+	  transition: all 0.2s;
+	
+	  &:active {
+	    background: rgba(58, 50, 44, 0.1);
+	    transform: scale(0.96);
+	  }
+	}
+	
+	/* ==================== 完成页视觉优化 ==================== */
+	.finish-area {
+	  display: flex;
+	  flex-direction: column;
+	  align-items: center;
+	  justify-content: center;
+	  height: 60vh;
+	  animation: fade-in 0.5s ease-out; /* 增加入场动画 */
+	}
+	
+	@keyframes fade-in {
+	  from { opacity: 0; transform: translateY(20rpx); }
+	  to { opacity: 1; transform: translateY(0); }
+	}
+	
+	.finish-seal {
+	  width: 120rpx;
+	  height: 120rpx;
+	  border: 4rpx solid #b03a2e;
+	  border-radius: 20rpx;
+	  color: #b03a2e;
+	  font-size: 60rpx;
+	  font-weight: 700;
+	  display: flex;
+	  align-items: center;
+	  justify-content: center;
+	  transform: rotate(-6deg);
+	  margin-bottom: 30rpx;
+	  box-shadow: 0 8rpx 20rpx rgba(176, 58, 46, 0.15); /* 印章加阴影 */
+	}
+	
+	.finish-text {
+	  font-size: 40rpx;
+	  color: #3a322c;
+	  letter-spacing: 6rpx;
+	  font-weight: 600;
+	  margin-bottom: 30rpx;
+	}
+	
+	.finish-stat {
+	  display: flex;
+	  flex-direction: column;
+	  align-items: center;
+	  margin-bottom: 60rpx;
+	  padding: 20rpx 40rpx;
+	  background: rgba(251, 247, 236, 0.6);
+	  border-radius: 16rpx;
+	  border: 1px dashed #e2d8c0;
+	}
+	
+	.stat-line {
+	  font-size: 28rpx;
+	  color: #8a8278;
+	  margin: 6rpx 0;
+	  letter-spacing: 2rpx;
+	}
+	
+	/* 按钮包裹层 */
+	.finish-btn-wrap {
+	  display: flex;
+	  justify-content: center;
+	  width: 100%;
+	}
+	
+	/* 交卷按钮 */
+	.finish-submit-btn {
+	  width: 420rpx;
+	  padding: 26rpx 0;
+	  border-radius: 50rpx;
+	  background: linear-gradient(135deg, #b03a2e, #d14a3a);
+	  color: #f6f1e4;
+	  font-size: 32rpx;
+	  font-weight: 600;
+	  letter-spacing: 4rpx;
+	  text-align: center;
+	  box-shadow: 0 10rpx 24rpx rgba(176, 58, 46, 0.3);
+	  transition: all 0.2s;
+	
+	  &:active {
+	    transform: scale(0.96);
+	    opacity: 0.9;
+	    box-shadow: 0 4rpx 10rpx rgba(176, 58, 46, 0.2);
+	  }
+	}
+	
+	/* 返回按钮 (幽灵描边) */
+	.finish-return-btn {
+	  width: 320rpx;
+	  padding: 24rpx 0;
+	  border-radius: 50rpx;
+	  background: transparent;
+	  color: #3a322c;
+	  border: 2rpx solid #3a322c;
+	  font-size: 30rpx;
+	  letter-spacing: 6rpx;
+	  text-align: center;
+	  transition: all 0.2s;
+	
+	  &:active {
+	    background: rgba(58, 50, 44, 0.08);
+	    transform: scale(0.96);
+	  }
 	}
 </style>

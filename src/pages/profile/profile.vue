@@ -50,13 +50,24 @@
 					</view>
 					<text class="menu-arrow">›</text>
 				</view>
-				
+
 				<view class="menu-item" @click="goCategory">
-				  <view class="menu-left">
-				    <text class="menu-icon">🗂️</text>
-				    <text>题型分类</text>
-				  </view>
-				  <text class="menu-arrow">›</text>
+					<view class="menu-left">
+						<text class="menu-icon">🗂️</text>
+						<text>题型分类</text>
+					</view>
+					<text class="menu-arrow">›</text>
+				</view>
+
+				<view class="menu-item" @click="goFeedback">
+					<view class="menu-left">
+						<text class="menu-icon">💬</text>
+						<text>意见箱</text>
+						<view v-if="feedbackUnread > 0" class="menu-badge">
+							{{ feedbackUnread > 99 ? '99+' : feedbackUnread }}
+						</view>
+					</view>
+					<text class="menu-arrow">›</text>
 				</view>
 			</view>
 		</template>
@@ -72,7 +83,9 @@
 		picUrl,
 		BASE_URL
 	} from '@/utils/request'
-
+	import {
+		getFeedbackUnreadCount
+	} from '@/api/feedback'
 	export default {
 		data() {
 			return {
@@ -81,7 +94,8 @@
 					id: null,
 					nickname: '',
 					avatarUrl: ''
-				}
+				},
+				feedbackUnread: 0
 			}
 		},
 
@@ -89,6 +103,7 @@
 			this.isLoggedIn = !!uni.getStorageSync('token')
 			if (this.isLoggedIn) {
 				this.loadUserInfo()
+				this.loadFeedbackUnread()
 			}
 		},
 
@@ -223,21 +238,51 @@
 					url: '/pages/wrong/wrong'
 				})
 			},
-			
+
 			goCategory() {
-			  uni.navigateTo({
-			    url: '/pages/category/category',
-			    fail: (err) => {
-			      console.error('navigateTo category fail:', err)
-			      uni.showToast({ title: '页面开发中', icon: 'none' })
-			    }
-			  })
+				uni.navigateTo({
+					url: '/pages/category/category',
+					fail: (err) => {
+						console.error('navigateTo category fail:', err)
+						uni.showToast({
+							title: '页面开发中',
+							icon: 'none'
+						})
+					}
+				})
+			},
+
+			async loadFeedbackUnread() {
+				try {
+					this.feedbackUnread = Number(await getFeedbackUnreadCount()) || 0
+				} catch (e) {}
+			},
+
+			goFeedback() {
+				uni.navigateTo({
+					url: '/pages/feedback/index'
+				})
 			}
 		}
 	}
 </script>
 
 <style lang="scss" scoped>
+	.menu-badge {
+	  margin-left: 12rpx;
+	  min-width: 36rpx;
+	  height: 36rpx;
+	  padding: 0 10rpx;
+	  display: flex;
+	  align-items: center;
+	  justify-content: center;
+	  background: #b03a2e;
+	  color: #f6f1e4;
+	  font-size: 20rpx;
+	  border-radius: 18rpx;
+	  font-weight: 600;
+	}
+	
 	.profile-container {
 		min-height: 100vh;
 		padding: 30rpx;
