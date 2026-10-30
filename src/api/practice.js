@@ -52,3 +52,20 @@ export function listMyRecords(pageNum = 1, pageSize = 10) {
     params: { pageNum, pageSize }   // 注意：GET 用 params
   })
 }
+
+/** 批量导出错题为 PDF（★ 需要登录，返回 OSS 链接） */
+export function exportWrongPdf(questionIds) {
+  return authRequest({
+    url: '/api/practice/wrong/export-pdf',
+    method: 'POST',
+    data: questionIds
+  })
+}
+
+/** 获取昨日错题排行榜 */
+export function getYesterdayWrongRanking() {
+  return request({
+    url: '/api/practice/wrong/yesterday-ranking',
+    method: 'GET'
+  })
+}

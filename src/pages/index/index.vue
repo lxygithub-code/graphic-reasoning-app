@@ -20,14 +20,38 @@
 			<text class="subtitle-text">图形推理 · 每日精进</text>
 			<view class="subtitle-line"></view>
 		</view>
-		<!-- ★ 今日推荐（游客可看） -->
-		<view class="recommend-wrap" v-if="recommendQuestions.length">
-			<view class="recommend-title">今日推荐</view>
-			<view class="recommend-item" v-for="(q, i) in recommendQuestions" :key="q.id" @click="goRecommend(q)">
-				<text class="recommend-index">{{ i + 1 }}</text>
-				<text class="recommend-text">{{ q.content || '看图答题' }}</text>
+
+		<!-- ★ 昨日错题排行榜 -->
+		<view class="ranking-wrap" v-if="rankingList.length">
+			<view class="ranking-header">
+				<text class="ranking-title">昨日错题排行榜</text>
+				<text class="ranking-sub">大家都在这里栽跟头</text>
+			</view>
+
+			<view class="ranking-list">
+				<view class="ranking-item" v-for="(item, i) in rankingList" :key="item.questionId"
+					@click="goRankingDetail(item.questionId)">
+					<!-- 序号：前三名特殊高亮 -->
+					<view class="rank-index" :class="'rank-' + (i + 1)">
+						{{ i + 1 }}
+					</view>
+
+					<!-- 题目内容 -->
+					<text class="rank-text">{{ item.content || '看图答题' }}</text>
+
+					<!-- 错误人数 -->
+					<text class="rank-count">{{ item.wrongCount }}人错</text>
+				</view>
 			</view>
 		</view>
+
+		<!-- 空状态（如果昨天没人错题） -->
+		<view class="ranking-wrap empty-wrap" v-else>
+			<view class="empty-seal">全</view>
+			<view class="empty-text-main">昨日全对，无人失分</view>
+			<view class="empty-text-sub">大家太强啦，今天继续保持！</view>
+		</view>
+
 		<!-- ★ 个人中心入口（副标题右下方） -->
 		<view class="user-entry-wrap">
 			<view class="user-entry" @tap="goProfile">
@@ -61,9 +85,11 @@
 		getUserInfo
 	} from '@/api/user'
 	import {
-		request,
 		picUrl
 	} from '@/utils/request'
+	import {
+		getYesterdayWrongRanking
+	} from '@/api/practice' // ★ 引入排行榜接口
 
 	export default {
 		name: 'Index',
@@ -74,7 +100,7 @@
 					nickname: '',
 					avatarUrl: ''
 				},
-				recommendQuestions: []
+				rankingList: [] // ★ 数据源改为排行榜
 			};
 		},
 		onLoad() {
@@ -82,8 +108,8 @@
 				const sys = uni.getSystemInfoSync();
 				this.statusBarHeight = sys.statusBarHeight || 20;
 			} catch (e) {}
-			// ★ 游客也能加载推荐题目
-			this.loadRecommend()
+			// ★ 游客也能加载排行榜
+			this.loadRanking()
 		},
 		onShow() {
 			// 每次回到首页刷新用户信息
@@ -91,20 +117,17 @@
 		},
 		methods: {
 			picUrl,
-			async loadRecommend() {
+
+			// ★ 加载昨日错题排行榜
+			async loadRanking() {
 				try {
-					const res = await request({
-						url: '/api/question/random',
-						method: 'POST',
-						data: {
-							count: 3
-						}
-					})
-					this.recommendQuestions = res || []
+					const res = await getYesterdayWrongRanking()
+					this.rankingList = res || []
 				} catch (e) {
-					console.warn('推荐加载失败', e)
+					console.warn('排行榜加载失败', e)
 				}
 			},
+
 			async loadUserInfo() {
 				try {
 					const res = await getUserInfo()
@@ -170,10 +193,12 @@
 					}
 				})
 			},
-			goRecommend(q) {
-				if (!q || !q.id) return
+
+			// ★ 跳转到错题详情
+			goRankingDetail(questionId) {
+				if (!questionId) return
 				uni.navigateTo({
-					url: `/pages/question/detail?id=${q.id}`
+					url: `/pages/question/detail?questionId=${questionId}`
 				})
 			}
 		}
@@ -181,7 +206,8 @@
 </script>
 
 <style lang="scss" scoped>
-	.recommend-wrap {
+	/* ==================== 排行榜样式 ==================== */
+	.ranking-wrap {
 		position: relative;
 		z-index: 2;
 		margin: 60rpx 60rpx 0;
@@ -192,40 +218,82 @@
 		box-shadow: 0 6rpx 18rpx rgba(58, 50, 44, 0.06);
 	}
 
-	.recommend-title {
-		font-size: 28rpx;
-		font-weight: 600;
-		color: #3a322c;
+	.ranking-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-end;
 		margin-bottom: 20rpx;
-		letter-spacing: 4rpx;
+		padding-bottom: 16rpx;
+		border-bottom: 2rpx dashed #e2d8c0;
 	}
 
-	.recommend-item {
+	.ranking-title {
+		font-size: 30rpx;
+		font-weight: 700;
+		color: #3a322c;
+		letter-spacing: 2rpx;
+	}
+
+	.ranking-sub {
+		font-size: 22rpx;
+		color: #8a8278;
+	}
+
+	.ranking-list {
+		display: flex;
+		flex-direction: column;
+		gap: 16rpx;
+	}
+
+	.ranking-item {
 		display: flex;
 		align-items: center;
-		padding: 12rpx 0;
-		border-bottom: 1rpx dashed #e2d8c0;
+		padding: 10rpx 0;
 
-		&:last-child {
-			border-bottom: none;
+		&:active {
+			opacity: 0.7;
 		}
 	}
 
-	.recommend-index {
-		width: 40rpx;
-		height: 40rpx;
+	/* 序号样式 */
+	.rank-index {
+		width: 44rpx;
+		height: 44rpx;
 		border-radius: 50%;
-		background: #b03a2e;
-		color: #f6f1e4;
-		font-size: 22rpx;
+		background: #e6ddc9;
+		/* 默认浅灰色 */
+		color: #5c5348;
+		font-size: 24rpx;
+		font-weight: 700;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		margin-right: 16rpx;
+		margin-right: 20rpx;
 		flex-shrink: 0;
 	}
 
-	.recommend-text {
+	/* 前三名高亮 */
+	.rank-1 {
+		background: #b03a2e;
+		/* 朱砂红 */
+		color: #f6f1e4;
+		box-shadow: 0 4rpx 10rpx rgba(176, 58, 46, 0.3);
+	}
+
+	.rank-2 {
+		background: #e6a23c;
+		/* 锦葵黄 */
+		color: #fff;
+	}
+
+	.rank-3 {
+		background: #c9bda3;
+		/* 浅墨褐 */
+		color: #fff;
+	}
+
+	/* 题目文字 */
+	.rank-text {
 		flex: 1;
 		font-size: 26rpx;
 		color: #3a322c;
@@ -234,9 +302,59 @@
 		white-space: nowrap;
 	}
 
-	/* ===== 水墨配色 =====
- * 宣纸底 #f6f1e4 / 墨色 #3a322c / 浅墨 #8a8278 / 朱砂印 #b03a2e
- */
+	/* 错误人数 */
+	.rank-count {
+		font-size: 22rpx;
+		color: #b03a2e;
+		font-weight: 600;
+		margin-left: 16rpx;
+		flex-shrink: 0;
+	}
+
+	/* 空状态 */
+	/* 空状态美化版 */
+	.empty-wrap {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		padding: 50rpx 32rpx 60rpx;
+		background: linear-gradient(180deg, rgba(251, 247, 236, 0.9) 0%, rgba(246, 241, 228, 0.9) 100%);
+	}
+
+	/* 仿朱砂印章 */
+	.empty-seal {
+		width: 64rpx;
+		height: 64rpx;
+		border: 3rpx solid #b03a2e;
+		border-radius: 10rpx;
+		color: #b03a2e;
+		font-size: 32rpx;
+		font-weight: 700;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transform: rotate(-6deg);
+		margin-bottom: 24rpx;
+		opacity: 0.9;
+		box-shadow: 0 4rpx 10rpx rgba(176, 58, 46, 0.15);
+	}
+
+	.empty-text-main {
+		font-size: 32rpx;
+		font-weight: 600;
+		color: #3a322c;
+		letter-spacing: 4rpx;
+		margin-bottom: 12rpx;
+	}
+
+	.empty-text-sub {
+		font-size: 24rpx;
+		color: #8a8278;
+		letter-spacing: 2rpx;
+	}
+
+	/* ===== 原有水墨风样式 ===== */
 	.page {
 		position: relative;
 		width: 100vw;
@@ -246,7 +364,6 @@
 		box-sizing: border-box;
 	}
 
-	/* 淡墨晕染装饰 */
 	.ink-orb {
 		position: absolute;
 		border-radius: 50%;
@@ -269,7 +386,6 @@
 		background: radial-gradient(circle, rgba(122, 108, 88, 0.10) 0%, rgba(122, 108, 88, 0) 70%);
 	}
 
-	/* 底部远山淡墨线 */
 	.ink-mountain {
 		position: absolute;
 		left: 0;
@@ -287,14 +403,14 @@
 		z-index: 2;
 	}
 
-	/* 品牌区 */
 	.brand {
 		position: relative;
 		z-index: 2;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding-top: 180rpx;
+		padding-top: 140rpx;
+		/* 稍微减小一点间距，给排行榜留空间 */
 	}
 
 	.brand-seal {
@@ -319,7 +435,6 @@
 		letter-spacing: 10rpx;
 	}
 
-	/* 副标题 */
 	.subtitle {
 		position: relative;
 		z-index: 2;
@@ -342,7 +457,6 @@
 		letter-spacing: 6rpx;
 	}
 
-	/* ★ 个人中心入口（副标题下方靠右） */
 	.user-entry-wrap {
 		position: relative;
 		z-index: 2;
@@ -414,7 +528,6 @@
 		margin-top: 4rpx;
 	}
 
-	/* 底部 CTA */
 	.cta {
 		position: absolute;
 		left: 90rpx;
@@ -452,7 +565,6 @@
 		background: #b03a2e;
 	}
 
-	/* 页脚题字 */
 	.footer {
 		position: absolute;
 		left: 0;
