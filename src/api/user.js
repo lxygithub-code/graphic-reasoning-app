@@ -16,3 +16,11 @@ export function updateUserProfile(data) {
     data
   })
 }
+
+/** 获取小程序管理员看板数据 */
+export function getMiniappDashboard() {
+  return authRequest({
+    url: '/api/app-dashboard',
+    method: 'GET'
+  })
+}

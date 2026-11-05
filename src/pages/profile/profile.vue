@@ -23,6 +23,14 @@
 
 		<!-- 功能入口 -->
 		<view class="menu-group">
+			<!-- ★ 管理员专属入口 -->
+			<view class="menu-item admin-menu" v-if="userInfo.isAdmin === 1" @click="goAdminDashboard">
+				<view class="menu-left">
+					<view class="icon-wrap bg-admin"><text class="menu-icon">👑</text></view>
+					<text class="menu-text">数据看板 (Admin)</text>
+				</view>
+				<text class="menu-arrow">›</text>
+			</view>
 			<view class="menu-item" @click="goHistory">
 				<view class="menu-left">
 					<view class="icon-wrap bg-blue"><text class="menu-icon">📊</text></view>
@@ -105,7 +113,8 @@
 					this.userInfo = {
 						id: res.id,
 						nickname: res.nickname || '',
-						avatarUrl: res.avatarUrl || ''
+						avatarUrl: res.avatarUrl || '',
+						isAdmin: res.isAdmin || 0 // ★ 保存管理员状态
 					}
 				} catch (e) {}
 			},
@@ -219,12 +228,19 @@
 				uni.navigateTo({
 					url: '/pages/feedback/index'
 				})
+			},
+			
+			goAdminDashboard() {
+			  uni.navigateTo({ url: '/pages/admin/dashboard/index' })
 			}
 		}
 	}
 </script>
 
 <style lang="scss" scoped>
+	.bg-admin { background: #fdf3d9; }
+	.admin-menu .menu-text { color: #b03a2e; font-weight: 700; }
+	
 	.profile-container {
 		position: relative;
 		min-height: 100vh;

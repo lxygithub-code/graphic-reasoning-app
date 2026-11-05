@@ -105,6 +105,10 @@
 		{
 		  "path": "pages/feedback/detail",
 		  "style": { "navigationBarTitleText": "意见详情" }
+		},
+		{
+		  "path": "pages/admin/dashboard/index",
+		  "style": { "navigationBarTitleText": "数据看板" }
 		}
 	],
 	"globalStyle": {
